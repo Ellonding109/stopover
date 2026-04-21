@@ -3,6 +3,8 @@
 
 {% include "_includes/header" %}
 
+<!-- THIS HERE IS FOR THE MEET AND GREET BOOKING FORM  -->
+
 <!-- Flatpickr CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <!-- Paystack Inline JS -->
@@ -1011,7 +1013,7 @@ select.error {
                                 <div class="button-group">
                                     <button type="button" class="btn btn-custom btn-secondary-custom" onclick="prevStep(3)"><i class="fas fa-arrow-left me-2"></i>Previous</button>
                                     <button type="submit" class="btn btn-custom btn-primary-custom" id="payButton">
-                                        <i class="fas fa-lock me-2"></i>Complete Booking
+                                        <i class="fas fa-lock me-2" onclick="initiatePayment()"></i>Complete Booking
                                     </button>
                                 </div>
                             </div>
@@ -1028,7 +1030,7 @@ select.error {
                     
                     <!-- Service Image -->
                     <div class="service-image-container mb-3">
-                        <img src="assets/images/airport-meet-greet.jpg" alt="Meet & Greet Service" class="service-summary-img" id="serviceImage">
+                        <img src="../assets/jkia.jpg" alt="Meet & Greet Service" class="service-summary-img" id="serviceImage">
                     </div>
                     
                     <!-- Service Details -->
@@ -1205,8 +1207,8 @@ function updateSummary() {
         'departure': 'Departure Meet & Greet'
     };
     const serviceImages = {
-        'arrival': 'assets/images/arrival-meet-greet.jpg',
-        'departure': 'assets/images/departure-meet-greet.jpg'
+        'arrival': 'assets/jkia.jpg',
+        'departure': 'assets/londonia.jpg'
     };
     
     document.getElementById('summaryServiceName').textContent = serviceNames[serviceType] || 'Arrival Meet & Greet';
@@ -1522,7 +1524,7 @@ document.getElementById('bookingForm').addEventListener('submit', async function
         if (formData.paymentMethod === 'cash') {
             await submitBooking(formData, reference, null, null);
         } else {
-            await initiatePaystackPayment(formData, reference, totalKES, totalUSD);
+            await initiatePayment(formData, reference, totalKES, totalUSD);
         }
         
     } catch (error) {
@@ -1559,41 +1561,159 @@ async function submitBooking(formData, reference, paystackRef, paystackTransId) 
     window.location.href = '/meet-greet/success?ref=' + reference;
 }
 
-async function initiatePaystackPayment(formData, reference, amountKES, amountUSD) {
-    return new Promise((resolve, reject) => {
+// Initiate payment - UPDATED to match ETA format
+async function initiatePayment() {
+    const form = document.getElementById('bookingForm');
+    const formData = new FormData(form);
+
+    // Calculate total in USD first
+    let totalUSD = 0;
+
+    // Add service prices
+    if (formData.get('serviceType') === 'arrival') totalUSD += 50;      // $50
+    if (formData.get('serviceType') === 'departure') totalUSD += 40;    // $40
+
+    // Add additional travelers — priced dynamically to match primary user's service
+    const additionalTravelers = (parseInt(document.getElementById('adults').value) || 1) - 1 + 
+                                (parseInt(document.getElementById('children').value) || 0);
+    if (additionalTravelers > 0) {
+        let travelerUSD = formData.get('serviceType') === 'arrival' ? 50 : 40;
+        totalUSD += (additionalTravelers * travelerUSD * 0.5); // Children pay 50%, additional adults full price
+    }
+
+    // Add transportation if selected
+    if (document.getElementById('transportation').checked) {
+        totalUSD += 25; // $25 flat rate
+    }
+
+    // Convert USD to KES (using exchange rate)
+    const exchangeRate = 130; // 1 USD = 130 KES
+    const totalKES = totalUSD * exchangeRate;
+
+    // Validate terms agreement
+    if (!document.getElementById('termsAgree').checked) {
+        showFieldError('termsAgree', 'You must agree to the terms and conditions before proceeding');
+        return;
+    }
+
+    // Disable pay button
+    const payButton = document.getElementById('payButton');
+    payButton.disabled = true;
+    payButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+    try {
+        // Get form data
+        const email = formData.get('email');
+        const firstName = formData.get('firstName');
+        const lastName = formData.get('lastName');
+        const reference = 'MNG-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+        // Initialize Paystack with KES amount
         const handler = PaystackPop.setup({
             key: paystackPublicKey,
-            email: formData.email,
-            amount: Math.round(amountKES * 100),
+            email: email,
+            amount: Math.round(totalKES * 100), // Convert to cents (KES)
             currency: 'KES',
             ref: reference,
-            metadata: {
+            metadata: {  // ✅ Use 'metadata' not 'meta'
                 custom_fields: [
-                    { display_name: "Service Type", variable_name: "service_type", value: formData.serviceType },
-                    { display_name: "Passenger Name", variable_name: "passenger_name", value: `${formData.firstName} ${formData.lastName}` },
-                    { display_name: "Amount USD", variable_name: "amount_usd", value: `$${amountUSD.toFixed(2)}` },
-                    { display_name: "Amount KES", variable_name: "amount_kes", value: `KES ${amountKES.toFixed(2)}` }
+                    {
+                        display_name: "Service Type",
+                        variable_name: "service_type",
+                        value: formData.get('serviceType')
+                    },
+                    {
+                        display_name: "Passenger Name",
+                        variable_name: "passenger_name",
+                        value: `${firstName} ${lastName}`
+                    },
+                    {
+                        display_name: "Amount USD",
+                        variable_name: "amount_usd",
+                        value: `$${totalUSD.toFixed(2)}`
+                    },
+                    {
+                        display_name: "Amount KES",
+                        variable_name: "amount_kes",
+                        value: `KES ${totalKES.toFixed(2)}`
+                    }
                 ]
             },
-            callback: async function(response) {
-                try {
-                    await submitBooking(formData, response.reference, response.reference, response.trans);
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
+            callback: function(response) {
+                // Payment successful
+                alert(`Payment successful!\nReference: ${response.reference}\nAmount: KES ${totalKES.toFixed(2)}`);
+                // Save transaction to database
+                saveTransaction(response, totalUSD, totalKES);
             },
             onClose: function() {
                 alert('Payment window closed. You can complete your booking later using reference: ' + reference);
-                resetPayButton();
-                resolve();
+                payButton.disabled = false;
+                payButton.innerHTML = '<i class="fas fa-lock me-2"></i>Complete Booking';
             }
         });
-        
+
         handler.openIframe();
-    });
+
+    } catch (error) {
+        console.error('Payment error:', error);
+        alert('Error: ' + error.message);
+        payButton.disabled = false;
+        payButton.innerHTML = '<i class="fas fa-lock me-2"></i>Complete Booking';
+    }
 }
 
+// Save transaction to your backend - UPDATED to match ETA format
+async function saveTransaction(paystackResponse, amountUSD, amountKES) {
+    try {
+        const formData = new FormData(document.getElementById('bookingForm'));
+        const data = {
+            reference: paystackResponse.reference,
+            transactionId: paystackResponse.trans,
+            amountUSD: amountUSD,
+            amountKES: amountKES,
+            email: formData.get('email'),
+            firstName: formData.get('firstName'),
+            lastName: formData.get('lastName'),
+            serviceType: formData.get('serviceType'),
+            travelDate: formData.get('travelDate'),
+            travelTime: formData.get('travelTime'),
+            adults: formData.get('adults'),
+            children: formData.get('children'),
+            infants: formData.get('infants'),
+            transportation: formData.get('transportation'),
+            pagerName: formData.get('pagerName'),
+            phone: formData.get('phone'),
+            totalBags: formData.get('totalBags'),
+            flightNumber: formData.get('flightNumber'),
+            flightClass: formData.get('flightClass'),
+            specialRequests: formData.get('specialRequests')
+        };
+
+        const fetchResponse = await fetch('/actions/meet-greet/book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await fetchResponse.json();
+
+        if (result.success) {
+            // Redirect to success page
+            window.location.href = '/meet-greet/success?ref=' + paystackResponse.reference;
+        } else {
+            alert('Error saving booking: ' + (result.errors?.server || 'Unknown error'));
+            resetPayButton();
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('Error: ' + error.message);
+        resetPayButton();
+    }
+}
+
+// Reset pay button state
 function resetPayButton() {
     const payButton = document.getElementById('payButton');
     payButton.disabled = false;

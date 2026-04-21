@@ -2,6 +2,10 @@
 {% block content %}
 
 {% include "_includes/header" %}
+
+<!-- THIS HERE IS FOR THE ETA-APPLICATION  -->
+
+
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://js.paystack.co/v1/inline.js"></script>
@@ -2361,88 +2365,6 @@
             document.getElementById('totalAmount').textContent = `KES ${total.toFixed(2)}`;
         }
 
-        // Initiate payment - UPDATED for KES
-        /**async function initiatePayment() {
-            const form = document.getElementById('applicationForm');
-            const formData = new FormData(form);
-
-            // Validate terms agreement
-            if (!document.getElementById('termsAgree').checked) {
-                showFieldError('termsAgree', 'You must agree to the terms and conditions before proceeding');
-                return;
-            }
-
-            // Disable pay button to prevent double submission
-            const payButton = document.getElementById('payButton');
-            payButton.disabled = true;
-            payButton.textContent = 'Processing...';
-
-            try {
-                // STEP 1: Submit application to server FIRST
-                const submitResponse = await submitApplicationToServer(formData);
-                
-                if (!submitResponse.success) {
-                    throw new Error(submitResponse.errors ? Object.values(submitResponse.errors).join(', ') : 'Failed to submit application');
-                }
-
-                // Store application ID for payment verification
-                currentApplicationId = submitResponse.applicationId;
-                const serverTotal = submitResponse.totalAmount;
-
-                // STEP 2: Initialize Paystack with server-verified amount
-                const email = formData.get('email');
-                const firstName = formData.get('firstName');
-                const lastName = formData.get('lastName');
-                const reference = submitResponse.referenceNumber; // Use server reference
-
-                // STEP 3: Open Paystack payment
-                const handler = PaystackPop.setup({
-                    key: paystackPublicKey,
-                    email: email,
-                    amount: Math.round(serverTotal * 100), // Amount in cents (server-verified, already in KES)
-                    currency: 'KES',
-                    ref: reference,
-                    metadata: {
-                        custom_fields: [
-                            {
-                                display_name: "Applicant Name",
-                                variable_name: "applicant_name",
-                                value: `${firstName} ${lastName}`
-                            },
-                            {
-                                display_name: "Application ID",
-                                variable_name: "application_id",
-                                value: currentApplicationId.toString()
-                            },
-                            {
-                                display_name: "Service Type",
-                                variable_name: "service_type",
-                                value: getSelectedServices(formData)
-                            }
-                        ]
-                    },
-                    callback: function(response) {
-                        // Payment successful - verify with server
-                        verifyPaymentWithServer(response.reference, response.trans);
-                    },
-                    onClose: function() {
-                        alert('Payment window closed. Your application is saved but payment is pending. You can complete payment later using reference: ' + reference);
-                        payButton.disabled = false;
-                        payButton.textContent = 'Pay Now';
-                    }
-                });
-
-                handler.openIframe();
-
-            } catch (error) {
-                console.error('Payment initiation error:', error);
-                alert('Error: ' + error.message);
-                payButton.disabled = false;
-                payButton.textContent = 'Pay Now';
-            }
-        }
-		**/
-		
 		
 		// Initiate payment
 async function initiatePayment() {
