@@ -1,0 +1,51 @@
+defaultPlacement: end
+fieldLayouts:
+  6302f5f4-f978-4ad1-9469-4fe5de53aa82:
+    cardThumbAlignment: end
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-27T13:28:26+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            requirable: false
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\TitleField
+            uid: aef0ab45-e899-4eb0-9093-290e7f7a7004
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: e1289188-9305-4d00-827c-4a614fc2a2cc
+        userCondition: null
+handle: newsCategories
+name: 'News Categories'
+siteSettings:
+  366d0d1b-668e-4852-a84c-e48d32bf121b: # Kenya Stopover
+    hasUrls: true
+    template: news-categories/_category.twig
+    uriFormat: 'news-categories/{slug}'
+structure:
+  maxLevels: null
+  uid: a3a96836-de1d-480e-9707-d800a742836a

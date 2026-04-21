@@ -1,0 +1,42 @@
+fieldLayouts:
+  fa3b01e1-97e9-438d-a0c6-75a050976e51:
+    cardThumbAlignment: end
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-27T13:28:55+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            requirable: false
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\TitleField
+            uid: 9bd74242-91e4-45ba-990b-a029a5836778
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: 2fdc8bc1-5de4-48d4-a46b-fc7d6f73a532
+        userCondition: null
+handle: newsTags
+name: 'News Tags'

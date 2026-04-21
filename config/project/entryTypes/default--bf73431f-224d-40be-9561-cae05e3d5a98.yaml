@@ -1,0 +1,73 @@
+color: green
+description: null
+fieldLayouts:
+  b822b179-245a-4655-8060-c9e11841612f:
+    cardThumbAlignment: end
+    cardView:
+      - dateUpdated
+      - section
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-19T11:17:19+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            required: true
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: 27e2f2e5-a350-4416-aaab-9827970b1ef0
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-02-11T07:08:08+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 22aa2642-9879-40d9-aa0e-28fb6ace4584 # Body
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: b8cb160d-27b1-4d77-8d18-afa0e28b434e
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: ffce0c49-6eca-40a2-a606-78db92cb59a7
+        userCondition: null
+handle: default
+hasTitleField: true
+icon: house-chimney-window
+name: Default
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: null
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

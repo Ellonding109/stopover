@@ -1,0 +1,53 @@
+color: red
+description: null
+fieldLayouts:
+  028f2343-00b5-452d-bd5d-9e382abccc51:
+    cardThumbAlignment: end
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-27T13:27:06+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            required: true
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: 836d9f51-7478-4f2f-ac82-27dc8a71ba93
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: 0a2ced2e-9622-49e2-8d89-86c9c7ad39d9
+        userCondition: null
+handle: consultation
+hasTitleField: true
+icon: calendar-heart
+name: 'Visa Consultation'
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: null
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

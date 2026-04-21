@@ -1,0 +1,35 @@
+/.env
+/.idea
+/vendor
+.DS_Store
+
+# Environment variables (VERY IMPORTANT)
+.env
+
+# Database dumps / backups
+*.sql
+*.zip
+*.tar
+*.tzst
+*.gz
+
+databases/
+backup_*
+dump-*
+
+# Dependencies
+vendor/
+
+# Logs / storage
+storage/
+*.log
+
+# Sensitive keys
+*_privatekey*
+*.key
+
+# OS files
+.DS_Store
+
+# Composer lock (optional depending on workflow)
+# composer.lock

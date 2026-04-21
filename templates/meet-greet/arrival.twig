@@ -1,0 +1,393 @@
+{% extends "_layouts/base" %}
+
+{% block body %}
+<div class="page-wrapper">
+    {% include "_includes/header" %}
+    
+    <!-- Page Banner -->
+    <section class="page-banner" style="background-image: url({{ siteUrl }}assets/images/meet-greet-banner.jpg);">
+        <div class="auto-container">
+            <div class="content-box">
+                <h1>{{ entry.title ?: 'Arrival Meet & Greet' }}</h1>
+                <ul class="bread-crumb">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="#">Meet & Greet</a></li>
+                    <li>{{ entry.title ?: 'Arrival Meet & Greet' }}</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Booking Form Section -->
+    <section class="booking-section py-5">
+        <div class="auto-container">
+            <div class="row">
+                <!-- Form Column -->
+                <div class="col-lg-8 col-md-12">
+                    <div class="booking-form-wrapper">
+                        <div class="section-title mb-4">
+                            <h2>Book Your Arrival Meet & Greet</h2>
+                            <p>Complete the form below to secure your personalized airport assistance</p>
+                        </div>
+                        
+                        <form id="meetGreetForm" method="post" class="meet-greet-form">
+                            <input type="hidden" name="serviceType" value="arrival">
+                            
+                            <!-- Passenger Details -->
+                            <div class="form-section mb-4">
+                                <h4 class="section-heading">Passenger Details</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>First Name <span class="required">*</span></label>
+                                        <input type="text" name="firstName" id="mg_firstName" required>
+                                        <span class="error-message" id="mg_firstName-error"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Last Name <span class="required">*</span></label>
+                                        <input type="text" name="lastName" id="mg_lastName" required>
+                                        <span class="error-message" id="mg_lastName-error"></span>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label>Name on Welcome Board <span class="required">*</span></label>
+                                        <input type="text" name="pagerName" id="mg_pagerName" required placeholder="How should your name appear?">
+                                        <small class="form-hint">This is what our representative will display at the airport</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Email <span class="required">*</span></label>
+                                        <input type="email" name="email" id="mg_email" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Phone (WhatsApp) <span class="required">*</span></label>
+                                        <input type="tel" name="phone" id="mg_phone" required placeholder="+254 7XX XXX XXX">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Flight Information -->
+                            <div class="form-section mb-4">
+                                <h4 class="section-heading">Flight Details</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Airline & Flight Number <span class="required">*</span></label>
+                                        <input type="text" name="flightNumber" id="mg_flightNumber" required placeholder="e.g., Kenya Airways KQ100">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Flight Class</label>
+                                        <select name="flightClass" id="mg_flightClass">
+                                            <option value="economy">Economy</option>
+                                            <option value="business">Business</option>
+                                            <option value="first">First Class</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Arrival Date <span class="required">*</span></label>
+                                        <input type="text" name="flightDate" id="mg_flightDate" class="datepicker" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Arrival Time <span class="required">*</span></label>
+                                        <input type="time" name="flightTime" id="mg_flightTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Passenger Count -->
+                            <div class="form-section mb-4">
+                                <h4 class="section-heading">Passengers</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Adults (12+)</label>
+                                        <input type="number" name="adults" id="mg_adults" value="1" min="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Children (2-11)</label>
+                                        <input type="number" name="children" id="mg_children" value="0" min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Infants (0-2)</label>
+                                        <input type="number" name="infants" id="mg_infants" value="0" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Payment Method -->
+                            <div class="form-section mb-4">
+                                <h4 class="section-heading">Payment</h4>
+                                <div class="payment-methods">
+                                    <label class="payment-option">
+                                        <input type="radio" name="paymentMethod" value="card" checked>
+                                        <div class="payment-card">
+                                            <img src="{{ siteUrl }}assets/images/icons/card.png" alt="Card">
+                                            <span>Credit/Debit Card</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-option">
+                                        <input type="radio" name="paymentMethod" value="mpesa">
+                                        <div class="payment-card">
+                                            <img src="{{ siteUrl }}assets/images/icons/mpesa.png" alt="M-Pesa">
+                                            <span>M-Pesa</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Terms -->
+                            <div class="form-group mb-4">
+                                <label class="checkbox-option">
+                                    <input type="checkbox" name="termsAccepted" id="mg_terms" required>
+                                    <span>I accept the <a href="/terms" target="_blank">Terms & Conditions</a></span>
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary btn-lg" id="mg_submitBtn">
+                                <span class="btn-text">Proceed to Payment</span>
+                                <span class="btn-loader" style="display:none;">Processing...</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Sidebar -->
+                <div class="col-lg-4 col-md-12">
+                    <div class="sidebar-widget">
+                        <div class="widget-box pricing-box">
+                            <h4>Pricing</h4>
+                            <div class="price-item">
+                                <span>Adult (12+)</span>
+                                <span class="price">KES 5,000</span>
+                            </div>
+                            <div class="price-item">
+                                <span>Child (2-11)</span>
+                                <span class="price">KES 3,000</span>
+                            </div>
+                            <div class="price-item">
+                                <span>Infant (0-2)</span>
+                                <span class="price">Free</span>
+                            </div>
+                            <div class="price-total">
+                                <span>Estimate:</span>
+                                <span id="mg_priceEstimate">KES 5,000</span>
+                            </div>
+                        </div>
+                        
+                        <div class="widget-box info-box">
+                            <h4>What's Included</h4>
+                            <ul class="service-features">
+                                <li>✓ Personalized meet & greet</li>
+                                <li>✓ Fast-track immigration help</li>
+                                <li>✓ Baggage assistance</li>
+                                <li>✓ Welcome board with your name</li>
+                                <li>✓ 24/7 support</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Paystack -->
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<style>
+/* Reuse your existing CSS variables */
+.page-banner {
+    background-size: cover;
+    padding: 100px 0;
+    position: relative;
+}
+.page-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 61, 98, 0.7);
+}
+.page-banner .content-box {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    color: white;
+}
+.booking-form-wrapper {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(10, 61, 98, 0.08);
+}
+.section-heading {
+    color: var(--primary);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.form-group.full-width { grid-column: 1 / -1; }
+.payment-methods {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+.payment-option input { display: none; }
+.payment-card {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.payment-option input:checked + .payment-card {
+    border-color: var(--primary);
+    background: rgba(10, 61, 98, 0.05);
+}
+.price-total {
+    border-top: 2px solid var(--primary);
+    padding-top: 15px;
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: var(--primary);
+}
+@media (max-width: 768px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .payment-methods { grid-template-columns: 1fr; }
+    .booking-form-wrapper { padding: 25px; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Date picker
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("#mg_flightDate", {
+            dateFormat: "m/d/Y",
+            minDate: "today"
+        });
+    }
+    
+    // Price calculator
+    function updatePrice() {
+        const adults = parseInt(document.getElementById('mg_adults').value) || 0;
+        const children = parseInt(document.getElementById('mg_children').value) || 0;
+        const total = (adults * 5000) + (children * 3000);
+        document.getElementById('mg_priceEstimate').textContent = 'KES ' + total.toLocaleString();
+        return total;
+    }
+    
+    ['mg_adults', 'mg_children'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updatePrice);
+    });
+    
+    // Form submission
+    document.getElementById('meetGreetForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Basic validation
+        const required = ['firstName', 'lastName', 'pagerName', 'email', 'phone', 'flightNumber', 'flightDate', 'flightTime', 'adults'];
+        let valid = true;
+        
+        required.forEach(field => {
+            const el = document.getElementById('mg_' + field);
+            if (el && !el.value.trim()) {
+                document.getElementById('mg_' + field + '-error').textContent = 'Required';
+                document.getElementById('mg_' + field + '-error').classList.add('visible');
+                valid = false;
+            }
+        });
+        
+        if (!document.getElementById('mg_terms').checked) {
+            alert('Please accept the terms and conditions');
+            valid = false;
+        }
+        
+        if (!valid) return;
+        
+        const btn = document.getElementById('mg_submitBtn');
+        btn.disabled = true;
+        btn.querySelector('.btn-text').style.display = 'none';
+        btn.querySelector('.btn-loader').style.display = 'inline';
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData);
+        const totalKES = updatePrice();
+        
+        try {
+            // Paystack for card payments
+            if (data.paymentMethod === 'card') {
+                const handler = PaystackPop.setup({
+                    key: '{{ getenv("PAYSTACK_PUBLIC_KEY") }}',
+                    email: data.email,
+                    amount: totalKES * 100,
+                    currency: 'KES',
+                    ref: 'MNG-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    metadata: {
+                        custom_fields: [
+                            { display_name: "Service", variable_name: "service", value: "arrival_meet_greet" },
+                            { display_name: "Passenger", variable_name: "passenger", value: data.firstName + ' ' + data.lastName }
+                        ]
+                    },
+                    callback: async function(response) {
+                        // Save booking after payment
+                        await saveBooking(data, totalKES, response.reference);
+                    },
+                    onClose: function() {
+                        alert('Payment cancelled. You can retry anytime.');
+                        resetButton();
+                    }
+                });
+                handler.openIframe();
+            } else {
+                // M-Pesa or other - save directly
+                await saveBooking(data, totalKES, null);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error: ' + err.message);
+            resetButton();
+        }
+    });
+    
+    async function saveBooking(data, amount, paymentRef) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        
+        const response = await fetch('/actions/meet-greet/book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+            },
+            body: JSON.stringify({
+                ...data,
+                amount: amount,
+                paymentReference: paymentRef
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.location.href = '/meet-greet/success?ref=' + result.bookingReference;
+        } else {
+            alert('Booking failed: ' + (result.errors?.server || 'Please try again'));
+            resetButton();
+        }
+    }
+    
+    function resetButton() {
+        const btn = document.getElementById('mg_submitBtn');
+        btn.disabled = false;
+        btn.querySelector('.btn-text').style.display = 'inline';
+        btn.querySelector('.btn-loader').style.display = 'none';
+    }
+});
+</script>
+
+{% endblock %}

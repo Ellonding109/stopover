@@ -1,0 +1,21 @@
+defaultPlacement: end
+enableVersioning: true
+entryTypes:
+  -
+    uid: bf73431f-224d-40be-9561-cae05e3d5a98 # Default
+handle: aboutUs
+maxAuthors: 1
+name: 'About us'
+previewTargets:
+  -
+    label: 'Primary entry page'
+    refresh: '1'
+    urlFormat: '{url}'
+propagationMethod: all
+siteSettings:
+  366d0d1b-668e-4852-a84c-e48d32bf121b: # Kenya Stopover
+    enabledByDefault: true
+    hasUrls: true
+    template: about-us/_entry.html
+    uriFormat: about-us
+type: single

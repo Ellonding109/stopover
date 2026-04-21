@@ -1,0 +1,30 @@
+fieldLayouts:
+  95d7d835-73a1-4a13-bfd9-615da4ce675c:
+    cardThumbAlignment: end
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            dateAdded: '2026-02-05T03:30:58+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 82df4320-9509-49c9-aac4-c195c5013236 # Header Background
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: a98a6d23-2d03-40ff-94bb-d0d33e60593c
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: cb976ea9-820a-4648-a03e-26e13aad304a
+        userCondition: null
+handle: header
+name: Header
+sortOrder: 1

@@ -1,0 +1,1614 @@
+{% extends "_layouts/main" %}
+{% block content %}
+
+{% include "_includes/header" %}
+
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Paystack Inline JS -->
+<script src="https://js.paystack.co/v1/inline.js"></script>
+
+<style>
+:root {
+    --primary: #0A3D62;
+    --secondary: #C79A5C;
+    --accent: #E8B872;
+    --text-dark: #1a1a1a;
+    --text-light: #666;
+    --bg-light: #FAFAF8;
+    --bg-white: #FFFFFF;
+    --border: #E5E5E0;
+    --success: #2D7D4F;
+    --error: #C7433D;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-light);
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary) 0%, #1a5276 100%);
+    padding: 80px 0 60px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.05" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+    background-size: cover;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-section h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.hero-section .lead {
+    font-size: 1.2rem;
+    opacity: 0.95;
+}
+
+/* Breadcrumb */
+.breadcrumb-custom {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.breadcrumb-custom a {
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+}
+
+.breadcrumb-custom a:hover {
+    color: white;
+}
+
+.breadcrumb-custom .active {
+    color: var(--secondary);
+}
+
+/* Booking Container */
+.booking-container {
+    margin-top: 70px;
+    padding-bottom: 60px;
+}
+
+.booking-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    padding: 30px 40px;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+}
+
+.progress-line {
+    position: absolute;
+    top: 50%;
+    left: 40px;
+    right: 40px;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+}
+
+.progress-line-fill {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.4s ease;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.step.completed .step-number {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.step.active .step-label {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Form Content */
+.form-content {
+    padding: 40px;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: var(--primary);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.section-subtitle {
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+/* Form Styling */
+.form-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.required {
+    color: var(--error);
+    margin-left: 2px;
+}
+
+.form-control, .form-select {
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(10, 61, 98, 0.1);
+}
+
+.input-group-text {
+    background: white;
+    border: 2px solid var(--border);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    color: var(--primary);
+}
+
+.input-group .form-control {
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+}
+
+/* Service Selection - Inline with Animation */
+.service-selection-container {
+    margin-bottom: 25px;
+}
+
+.service-toggle-btn {
+    width: 100%;
+    padding: 16px 20px;
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.service-toggle-btn:hover,
+.service-toggle-btn.active {
+    border-color: var(--primary);
+    background: rgba(10, 61, 98, 0.03);
+}
+
+.service-toggle-btn .arrow {
+    transition: transform 0.3s ease;
+}
+
+.service-toggle-btn.active .arrow {
+    transform: rotate(180deg);
+}
+
+.service-options-wrapper {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    opacity: 0;
+}
+
+.service-options-wrapper.show {
+    max-height: 300px;
+    opacity: 1;
+    margin-top: 15px;
+}
+
+.service-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.service-option {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.service-option:hover {
+    border-color: var(--secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.service-option.selected {
+    border-color: var(--primary);
+    background: rgba(10, 61, 98, 0.03);
+}
+
+.service-option input[type="radio"] {
+    display: none;
+}
+
+.service-name {
+    display: block;
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.service-price {
+    display: block;
+    font-weight: 700;
+    color: var(--secondary);
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.service-description {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+/* Transportation Add-on */
+.addon-card {
+    background: rgba(199, 154, 92, 0.05);
+    border: 2px dashed var(--secondary);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 25px;
+}
+
+.addon-card .form-check {
+    padding: 0px 0;
+}
+
+.addon-card .form-check-input {
+    width: 22px;
+    height: 22px;
+    margin-right: 12px;
+    accent-color: var(--secondary);
+}
+
+.addon-label {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 1.05rem;
+}
+
+.addon-price {
+    color: var(--secondary);
+    font-weight: 700;
+    margin-left: 10px;
+}
+
+/* Booking Summary Sidebar */
+.booking-summary {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 20px;
+}
+
+.summary-title {
+    font-size: 1.3rem;
+    color: var(--primary);
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    color: var(--text-light);
+}
+
+.summary-value {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.summary-total {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid var(--primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.total-amount {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* Buttons */
+.btn-custom {
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-custom {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.btn-primary-custom:hover {
+    background: #082d48;
+    border-color: #082d48;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(10, 61, 98, 0.3);
+}
+
+.btn-secondary-custom {
+    background: white;
+    border: 2px solid var(--border);
+    color: var(--text-dark);
+}
+
+.btn-secondary-custom:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+/* Form Step Visibility */
+.form-step {
+    display: none;
+}
+
+.form-step.active {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Payment Method Cards */
+.payment-methods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.payment-option {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.payment-option:hover,
+.payment-option.selected {
+    border-color: var(--primary);
+    background: rgba(10, 61, 98, 0.03);
+}
+
+.payment-option input[type="radio"] {
+    display: none;
+}
+
+.payment-icon {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.payment-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+/* Error Messages */
+.error-message {
+    display: none;
+    color: var(--error);
+    font-size: 0.85rem;
+    margin-top: 6px;
+}
+
+.error-message.visible {
+    display: block;
+}
+
+input.error,
+select.error {
+    border-color: var(--error) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .progress-steps {
+        padding: 20px;
+    }
+    
+    .step-label {
+        font-size: 0.75rem;
+    }
+    
+    .form-content {
+        padding: 25px;
+    }
+    
+    .service-options-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .payment-methods {
+        grid-template-columns: 1fr;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+
+}
+
+/* Enhanced Booking Summary Styles */
+.service-image-container {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.service-summary-img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.service-image-container:hover .service-summary-img {
+    transform: scale(1.05);
+}
+
+.service-details {
+    padding: 15px 0;
+    border-bottom: 2px solid var(--border);
+}
+
+.service-name {
+    font-size: 1.3rem;
+    color: var(--primary);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.service-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.meta-item i {
+    color: var(--secondary);
+}
+
+/* Price Breakdown */
+.price-breakdown {
+    background: var(--bg-light);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.breakdown-item:last-child {
+    border-bottom: none;
+}
+
+.breakdown-label {
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.breakdown-value {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+}
+
+/* Help Section */
+.help-section {
+    background: rgba(10, 61, 98, 0.03);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.help-title {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.help-text {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dark);
+    text-decoration: none;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.contact-item:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateX(5px);
+}
+
+.contact-item.whatsapp:hover {
+    background: #25D366;
+    color: white;
+}
+
+.contact-item i {
+    width: 20px;
+    text-align: center;
+}
+
+.availability-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(45, 125, 79, 0.1);
+    color: var(--success);
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Security Badges */
+.payment-methods {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.payment-methods i {
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+}
+
+.payment-methods i:hover {
+    opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .service-summary-img {
+        height: 150px;
+    }
+    
+    .service-name {
+        font-size: 1.1rem;
+    }
+    
+    .breakdown-item {
+        padding: 8px 0;
+    }
+    
+    .contact-item {
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+
+
+<!-- Booking Container -->
+<div class="booking-container">
+    <div class="container">
+        <div class="row">
+            <!-- Main Form -->
+            <div class="col-lg-8 mb-4">
+                <div class="booking-card">
+                    <!-- Progress Steps -->
+                    <div class="progress-steps">
+                        <div class="progress-line">
+                            <div class="progress-line-fill" id="progressLine" style="width: 0%"></div>
+                        </div>
+                        <div class="step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Service & Dates</div>
+                        </div>
+                        <div class="step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Passenger Details</div>
+                        </div>
+                        <div class="step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Flight Info</div>
+                        </div>
+                        <div class="step" data-step="4">
+                            <div class="step-number">4</div>
+                            <div class="step-label">Payment</div>
+                        </div>
+                    </div>
+
+                    <!-- Form Content -->
+                    <div class="form-content">
+                        <form id="bookingForm" novalidate>
+                            
+                            <!-- Step 1: Service Selection & Travel Dates -->
+                            <div class="form-step active" data-step="1">
+                                <h2 class="section-title">Select Your Service & Travel Dates</h2>
+                                <p class="section-subtitle">Choose the meet and greet service that best fits your needs</p>
+                                
+                                <!-- Service Selection with Animation -->
+                                <div class="service-selection-container">
+                                    <label class="form-label">Service Required <span class="required">*</span></label>
+                                    
+                                    <div class="service-toggle-btn" id="serviceToggle" onclick="toggleServiceOptions()">
+                                        <span id="selectedServiceText">Arrival Meet & Greet</span>
+                                        <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+                                    </div>
+                                    
+                                    <div class="service-options-wrapper" id="serviceOptions">
+                                        <div class="service-options-grid">
+                                            <div class="service-option selected" onclick="selectService('arrival', 50, this)">
+                                                <input type="radio" name="serviceType" value="arrival" checked>
+                                                <span class="service-name">Arrival Meet & Greet</span>
+                                                <span class="service-price">$50</span>
+                                                <div class="service-description">Our representative will meet you at the airport with a welcome board and assist with immigration, baggage collection, and transfers</div>
+                                            </div>
+                                            
+                                            <div class="service-option" onclick="selectService('departure', 40, this)">
+                                                <input type="radio" name="serviceType" value="departure">
+                                                <span class="service-name">Departure Meet & Greet</span>
+                                                <span class="service-price">$40</span>
+                                                <div class="service-description">Fast-track check-in assistance, priority security clearance, and escort to your departure gate</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Transportation Add-on -->
+                                <div class="addon-card">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="transportation" onchange="updateTotal()">
+                                        <label class="form-check-label addon-label" for="transportation">
+                                            I need airport transportation service
+                                            <span class="addon-price">+$25</span>
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Flat rate for transfers between airport and your accommodation</small>
+                                </div>
+                                
+                                <div class="row mt-4">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Travel Date <span class="required">*</span></label>
+                                        <input type="text" class="form-control datepicker" id="travelDate" placeholder="Select date" required>
+                                        <span class="error-message" id="travelDate-error"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Travel Time <span class="required">*</span></label>
+                                        <input type="time" class="form-control" id="travelTime" required>
+                                        <span class="error-message" id="travelTime-error"></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Adults (12+) <span class="required">*</span></label>
+                                        <select class="form-select" id="adults" onchange="updateTotal()" required>
+                                            <option value="1" selected>1 Adult</option>
+                                            <option value="2">2 Adults</option>
+                                            <option value="3">3 Adults</option>
+                                            <option value="4">4 Adults</option>
+                                            <option value="5">5 Adults</option>
+                                            <option value="6">6 Adults</option>
+                                        </select>
+                                        <span class="error-message" id="adults-error"></span>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Children (2-11) <span class="required">*</span></label>
+                                        <select class="form-select" id="children" onchange="updateTotal()" required>
+                                            <option value="0" selected>0 Children</option>
+                                            <option value="1">1 Child</option>
+                                            <option value="2">2 Children</option>
+                                            <option value="3">3 Children</option>
+                                            <option value="4">4 Children</option>
+                                        </select>
+                                        <span class="error-message" id="children-error"></span>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Infants (0-2)</label>
+                                        <select class="form-select" id="infants" required>
+                                            <option value="0" selected>0 Infants</option>
+                                            <option value="1">1 Infant</option>
+                                            <option value="2">2 Infants</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="button-group">
+                                    <button type="button" class="btn btn-custom btn-secondary-custom" disabled>Previous</button>
+                                    <button type="button" class="btn btn-custom btn-primary-custom" onclick="nextStep(2)">Continue <i class="fas fa-arrow-right ms-2"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Passenger Details -->
+                            <div class="form-step" data-step="2">
+                                <h2 class="section-title">Passenger Information</h2>
+                                <p class="section-subtitle">Please provide details as they appear on the passport</p>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">First Name <span class="required">*</span></label>
+                                        <input type="text" class="form-control" id="firstName" required placeholder="Enter first name">
+                                        <span class="error-message" id="firstName-error"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Last Name <span class="required">*</span></label>
+                                        <input type="text" class="form-control" id="lastName" required placeholder="Enter last name">
+                                        <span class="error-message" id="lastName-error"></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Preferred Name on Pager Board <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="pagerName" required placeholder="How should your name appear on the welcome board?">
+                                    <small class="text-muted">This is the name our representative will display at the airport</small>
+                                    <span class="error-message" id="pagerName-error"></span>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email Address <span class="required">*</span></label>
+                                        <input type="email" class="form-control" id="email" required placeholder="your.email@example.com">
+                                        <span class="error-message" id="email-error"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Phone Number (WhatsApp) <span class="required">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                            <input type="tel" class="form-control" id="phone" required placeholder="+254 7XX XXX XXX">
+                                        </div>
+                                        <span class="error-message" id="phone-error"></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Total Number of Bags <span class="required">*</span></label>
+                                    <input type="number" class="form-control" id="totalBags" min="1" value="1" required>
+                                    <span class="error-message" id="totalBags-error"></span>
+                                </div>
+                                
+                                <div class="button-group">
+                                    <button type="button" class="btn btn-custom btn-secondary-custom" onclick="prevStep(1)"><i class="fas fa-arrow-left me-2"></i>Previous</button>
+                                    <button type="button" class="btn btn-custom btn-primary-custom" onclick="nextStep(3)">Continue <i class="fas fa-arrow-right ms-2"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Flight Information -->
+                            <div class="form-step" data-step="3">
+                                <h2 class="section-title">Flight Details</h2>
+                                <p class="section-subtitle">Provide your flight information for seamless coordination</p>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Airline Name & Number <span class="required">*</span></label>
+                                        <input type="text" class="form-control" id="flightNumber" required placeholder="e.g., Kenya Airways KQ100">
+                                        <span class="error-message" id="flightNumber-error"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Flight Class</label>
+                                        <select class="form-select" id="flightClass">
+                                            <option value="economy">Economy</option>
+                                            <option value="business">Business</option>
+                                            <option value="first">First Class</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Special Requests or Additional Information</label>
+                                    <textarea class="form-control" id="specialRequests" rows="4" placeholder="Any special requirements, dietary needs, or assistance required?"></textarea>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Important:</strong> Our team will contact you 24 hours before your flight to confirm all details and provide meeting point instructions.
+                                </div>
+                                
+                                <div class="button-group">
+                                    <button type="button" class="btn btn-custom btn-secondary-custom" onclick="prevStep(2)"><i class="fas fa-arrow-left me-2"></i>Previous</button>
+                                    <button type="button" class="btn btn-custom btn-primary-custom" onclick="nextStep(4)">Continue to Payment <i class="fas fa-arrow-right ms-2"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Payment -->
+                            <div class="form-step" data-step="4">
+                                <h2 class="section-title">Payment</h2>
+                                <p class="section-subtitle">Complete your booking with secure payment</p>
+                                
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Booking Summary Confirmed</strong><br>
+                                    Please review your booking details in the summary and proceed to payment.
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label">Payment Method <span class="required">*</span></label>
+                                    <div class="payment-methods">
+                                        <label class="payment-option selected" onclick="selectPaymentMethod('card', this)">
+                                            <input type="radio" name="paymentMethod" value="card" checked>
+                                            <span class="payment-icon"><i class="fas fa-credit-card"></i></span>
+                                            <span class="payment-label">Credit/Debit Card</span>
+                                        </label>
+                                        <label class="payment-option" onclick="selectPaymentMethod('mpesa', this)">
+                                            <input type="radio" name="paymentMethod" value="mpesa">
+                                            <span class="payment-icon"><i class="fas fa-mobile-alt"></i></span>
+                                            <span class="payment-label">M-Pesa</span>
+                                        </label>
+                                        <label class="payment-option" onclick="selectPaymentMethod('cash', this)">
+                                            <input type="radio" name="paymentMethod" value="cash">
+                                            <span class="payment-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                            <span class="payment-label">Cash on Arrival</span>
+                                        </label>
+                                    </div>
+                                    <span class="error-message" id="paymentMethod-error"></span>
+                                </div>
+                                
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="termsAgree" required>
+                                    <label class="form-check-label" for="termsAgree">
+                                        I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a> <span class="required">*</span>
+                                    </label>
+                                    <span class="error-message" id="termsAgree-error"></span>
+                                </div>
+                                
+                                <div class="button-group">
+                                    <button type="button" class="btn btn-custom btn-secondary-custom" onclick="prevStep(3)"><i class="fas fa-arrow-left me-2"></i>Previous</button>
+                                    <button type="submit" class="btn btn-custom btn-primary-custom" id="payButton">
+                                        <i class="fas fa-lock me-2"></i>Complete Booking
+                                    </button>
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Summary Sidebar -->
+            <div class="col-lg-4">
+                <div class="booking-summary">
+                    <h3 class="summary-title"><i class="fas fa-receipt me-2"></i>Booking Summary</h3>
+                    
+                    <!-- Service Image -->
+                    <div class="service-image-container mb-3">
+                        <img src="assets/images/airport-meet-greet.jpg" alt="Meet & Greet Service" class="service-summary-img" id="serviceImage">
+                    </div>
+                    
+                    <!-- Service Details -->
+                    <div class="service-details mb-3">
+                        <h4 class="service-name" id="summaryServiceName">Arrival Meet & Greet</h4>
+                        <div class="service-meta">
+                            <span class="meta-item"><i class="fas fa-calendar-alt"></i> <span id="summaryDate">-</span></span>
+                            <span class="meta-item"><i class="fas fa-users"></i> <span id="summaryPassengers">1 Adult</span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Breakdown -->
+                    <div class="price-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Base Service Price</span>
+                            <span class="breakdown-value" id="basePrice">$50</span>
+                        </div>
+                        <div class="breakdown-item" id="transportationRow" style="display: none;">
+                            <span class="breakdown-label">Airport Transportation</span>
+                            <span class="breakdown-value" id="transportationPrice">$25</span>
+                        </div>
+                        <div class="breakdown-item" id="additionalTravelersRow" style="display: none;">
+                            <span class="breakdown-label">Additional Travelers</span>
+                            <span class="breakdown-value" id="additionalTravelersPrice">$0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Service Fee</span>
+                            <span class="breakdown-value">$0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Taxes & Fees</span>
+                            <span class="breakdown-value" id="taxesFees">$0</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Amount -->
+                    <div class="summary-total">
+                        <span class="total-label">Total Amount:</span>
+                        <span class="total-amount" id="totalAmount">$50</span>
+                    </div>
+                    
+                    <!-- Help Section -->
+                    <div class="help-section mt-4 pt-3 border-top">
+                        <h5 class="help-title"><i class="fas fa-headset me-2"></i>Need Help?</h5>
+                        <p class="help-text">Our travel experts are here to assist you</p>
+                        <div class="contact-info">
+                            <a href="tel:+254116818181" class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <span>+254 116 81 81 81</span>
+                            </a>
+                            <a href="https://wa.me/254116818181" class="contact-item whatsapp" target="_blank">
+                                <i class="fab fa-whatsapp"></i>
+                                <span>WhatsApp</span>
+                            </a>
+                            <a href="mailto:info@kenyastopover.com" class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>info@kenyastopover.com</span>
+                            </a>
+                        </div>
+                        <div class="availability-badge">
+                            <i class="fas fa-check-circle"></i> Available 24/7
+                        </div>
+                    </div>
+                    
+                    <!-- Security Badges -->
+                    <div class="security-badges mt-3 pt-3 border-top text-center">
+                        <small class="text-muted d-block mb-2">
+                            <i class="fas fa-shield-alt me-2"></i>Secure payment processing
+                        </small>
+                        <div class="payment-methods">
+                            <i class="fab fa-cc-visa fa-2x mx-1 text-muted"></i>
+                            <i class="fab fa-cc-mastercard fa-2x mx-1 text-muted"></i>
+                            <i class="fab fa-cc-amex fa-2x mx-1 text-muted"></i>
+                            <i class="fas fa-mobile-alt fa-2x mx-1 text-muted" title="M-Pesa"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+// Global variables
+let currentStep = 1;
+const totalSteps = 4;
+let selectedServicePrice = 50;
+const transportationPrice = 25;
+let datePickers = {};
+let currentBookingId = null;
+
+// Pricing configuration (USD)
+const pricing = {
+    arrival: 50,
+    departure: 40,
+    transportation: 25
+};
+
+// Paystack Public Key - injected from server
+const paystackPublicKey = '{{ getenv("PAYSTACK_PUBLIC_KEY") }}';
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDatePickers();
+    updateTotal();
+    updateSummary();
+});
+
+// Initialize Flatpickr for date inputs
+function initializeDatePickers() {
+    const today = new Date();
+    
+    datePickers.travelDate = flatpickr("#travelDate", {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        placeholder: "Select date",
+        disableMobile: true
+    });
+}
+
+// Toggle service options dropdown
+function toggleServiceOptions() {
+    const toggle = document.getElementById('serviceToggle');
+    const options = document.getElementById('serviceOptions');
+    
+    toggle.classList.toggle('active');
+    options.classList.toggle('show');
+}
+
+// Select service and update UI
+function selectService(type, price, element) {
+    document.querySelectorAll('input[name="serviceType"]').forEach(radio => {
+        radio.checked = (radio.value === type);
+    });
+    
+    document.querySelectorAll('.service-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    element.classList.add('selected');
+    
+    selectedServicePrice = price;
+    document.getElementById('selectedServiceText').textContent = 
+        type === 'arrival' ? 'Arrival Meet & Greet' : 'Departure Meet & Greet';
+    
+    if (window.innerWidth < 768) {
+        toggleServiceOptions();
+    }
+    
+    updateTotal();
+    updateSummary();
+}
+
+// Select payment method
+function selectPaymentMethod(method, element) {
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.checked = (radio.value === method);
+    });
+    
+    document.querySelectorAll('.payment-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    element.classList.add('selected');
+}
+
+// Update booking summary
+function updateSummary() {
+    const serviceType = document.querySelector('input[name="serviceType"]:checked').value;
+    const serviceNames = {
+        'arrival': 'Arrival Meet & Greet',
+        'departure': 'Departure Meet & Greet'
+    };
+    const serviceImages = {
+        'arrival': 'assets/images/arrival-meet-greet.jpg',
+        'departure': 'assets/images/departure-meet-greet.jpg'
+    };
+    
+    document.getElementById('summaryServiceName').textContent = serviceNames[serviceType] || 'Arrival Meet & Greet';
+    document.getElementById('serviceImage').src = serviceImages[serviceType] || 'assets/images/arrival-meet-greet.jpg';
+    
+    const travelDate = document.getElementById('travelDate').value;
+    document.getElementById('summaryDate').textContent = travelDate ? formatDateReadable(travelDate) : '-';
+    
+    const adults = document.getElementById('adults').value;
+    const children = document.getElementById('children').value;
+    const infants = document.getElementById('infants').value;
+    
+    let passengerText = `${adults} Adult${adults > 1 ? 's' : ''}`;
+    if (children > 0) passengerText += `, ${children} Child${children > 1 ? 'ren' : ''}`;
+    if (infants > 0) passengerText += `, ${infants} Infant${infants > 1 ? 's' : ''}`;
+    
+    document.getElementById('summaryPassengers').textContent = passengerText;
+    updatePriceBreakdown();
+}
+
+// ✅ UPDATED: Price breakdown with correct logic
+function updatePriceBreakdown() {
+    const adults = parseInt(document.getElementById('adults').value) || 1;
+    const children = parseInt(document.getElementById('children').value) || 0;
+    const infants = parseInt(document.getElementById('infants').value) || 0;
+    const hasTransportation = document.getElementById('transportation').checked;
+    const serviceType = document.querySelector('input[name="serviceType"]:checked').value;
+    
+    // Base price (only for first adult)
+    const basePrice = serviceType === 'arrival' ? 50 : 40;
+    document.getElementById('basePrice').textContent = `$${basePrice}`;
+    
+    // Transportation - only show if selected
+    const transportationRow = document.getElementById('transportationRow');
+    if (hasTransportation) {
+        transportationRow.style.display = 'flex';
+        document.getElementById('transportationPrice').textContent = '$25';
+    } else {
+        transportationRow.style.display = 'none';
+    }
+    
+    // Additional travelers pricing:
+    // - Additional adults (beyond first): full price
+    // - Children (2-11): 50% of adult price  
+    // - Infants (0-2): FREE
+    const additionalAdults = Math.max(0, adults - 1);
+    const additionalTravelersRow = document.getElementById('additionalTravelersRow');
+    
+    if (additionalAdults > 0 || children > 0) {
+        additionalTravelersRow.style.display = 'flex';
+        const additionalAdultPrice = additionalAdults * basePrice;
+        const childrenPrice = children * (basePrice * 0.5);
+        const totalAdditional = additionalAdultPrice + childrenPrice;
+        document.getElementById('additionalTravelersPrice').textContent = `$${totalAdditional.toFixed(2)}`;
+    } else {
+        additionalTravelersRow.style.display = 'none';
+    }
+    
+    // ✅ Service Fee - ONLY when transportation is selected (initially $0)
+    const serviceFeeRow = document.querySelector('.breakdown-item:nth-child(4)');
+    const serviceFeeElement = serviceFeeRow.querySelector('.breakdown-value');
+    let serviceFee = 0;
+    
+    if (hasTransportation) {
+        serviceFee = 0;
+        serviceFeeElement.textContent = `$${serviceFee.toFixed(2)}`;
+    } else {
+        serviceFeeElement.textContent = '$0';
+    }
+    
+    // ✅ Taxes & Fees - ONLY when transportation is selected (initially $0)
+    const taxesFeesRow = document.querySelector('.breakdown-item:nth-child(5)');
+    const taxesFeesElement = taxesFeesRow.querySelector('.breakdown-value');
+    let taxesFees = 0;
+    
+    if (hasTransportation) {
+        // Calculate 10% tax on transportation fee only
+        taxesFees = Math.round(25 * 0.0);
+        taxesFeesElement.textContent = `$${taxesFees}`;
+    } else {
+        taxesFeesElement.textContent = '$0';
+    }
+    
+    // Calculate total
+    const additionalTravelersCost = (additionalAdults * basePrice) + (children * basePrice * 0.5);
+    const subtotal = basePrice + additionalTravelersCost + (hasTransportation ? 25 : 0);
+    const total = subtotal + serviceFee + taxesFees;
+    
+    document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+}
+
+function formatDateReadable(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+}
+
+// ✅ UPDATED: Total calculation with correct passenger pricing
+function updateTotal() {
+    const adults = parseInt(document.getElementById('adults').value) || 1;
+    const children = parseInt(document.getElementById('children').value) || 0;
+    const infants = parseInt(document.getElementById('infants').value) || 0;
+    const hasTransportation = document.getElementById('transportation').checked;
+    
+    // Base price for first adult
+    let total = selectedServicePrice;
+    
+    // Additional adults: full price
+    const additionalAdults = Math.max(0, adults - 1);
+    total += additionalAdults * selectedServicePrice;
+    
+    // Children (2-11): 50% of adult price
+    total += children * (selectedServicePrice * 0.5);
+    
+    // Infants (0-2): FREE (no charge added)
+    
+    // Transportation add-on
+    if (hasTransportation) {
+        total += transportationPrice;
+    }
+    
+    // Service fee and taxes ONLY when transportation is selected
+    if (hasTransportation) {
+        total += 5; // Service fee
+        total += Math.round(25 * 0.0); // 10% tax on transportation
+    }
+    
+    document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
+    updateSummary();
+}
+
+// Navigation functions (unchanged)
+function nextStep(step) {
+    clearAllErrors();
+    const currentFormStep = document.querySelector(`.form-step[data-step="${currentStep}"]`);
+    let isValid = true;
+    
+    if (currentStep === 1) {
+        const requiredFields = ['travelDate', 'travelTime', 'adults', 'children'];
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && !field.value) {
+                showFieldError(fieldId, 'This field is required');
+                isValid = false;
+            }
+        });
+    }
+    
+    if (currentStep === 2) {
+        const requiredFields = ['firstName', 'lastName', 'pagerName', 'email', 'phone', 'totalBags'];
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && !field.value) {
+                showFieldError(fieldId, 'This field is required');
+                isValid = false;
+            }
+        });
+        
+        const email = document.getElementById('email').value;
+        if (email && !isValidEmail(email)) {
+            showFieldError('email', 'Please enter a valid email address');
+            isValid = false;
+        }
+        
+        const phone = document.getElementById('phone').value;
+        if (phone && !isValidPhone(phone)) {
+            showFieldError('phone', 'Please enter a valid phone number');
+            isValid = false;
+        }
+    }
+    
+    if (currentStep === 3) {
+        const requiredFields = ['flightNumber'];
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && !field.value) {
+                showFieldError(fieldId, 'This field is required');
+                isValid = false;
+            }
+        });
+    }
+    
+    if (!isValid) return;
+    
+    currentFormStep.classList.remove('active');
+    currentStep = step;
+    document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+    updateProgress();
+    
+    setTimeout(() => {
+        const formContainer = document.querySelector('.form-container');
+        if (formContainer) {
+            formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 50);
+}
+
+function prevStep(step) {
+    document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+    currentStep = step;
+    document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+    updateProgress();
+    
+    setTimeout(() => {
+        const formContainer = document.querySelector('.form-container');
+        if (formContainer) {
+            formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 50);
+}
+
+function updateProgress() {
+    const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+    document.getElementById('progressLine').style.width = progress + '%';
+    
+    document.querySelectorAll('.step').forEach((step, index) => {
+        const stepNum = index + 1;
+        step.classList.remove('active', 'completed');
+        if (stepNum < currentStep) {
+            step.classList.add('completed');
+        } else if (stepNum === currentStep) {
+            step.classList.add('active');
+        }
+    });
+}
+
+// Error handling
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorElement = document.getElementById(fieldId + '-error');
+    
+    if (field) field.classList.add('error');
+    if (errorElement && message) {
+        errorElement.textContent = message;
+        errorElement.classList.add('visible');
+    }
+}
+
+function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    const errorElement = document.getElementById(fieldId + '-error');
+    
+    if (field) field.classList.remove('error');
+    if (errorElement) {
+        errorElement.classList.remove('visible');
+        errorElement.textContent = '';
+    }
+}
+
+function clearAllErrors() {
+    document.querySelectorAll('.error-message').forEach(el => {
+        el.classList.remove('visible');
+        el.textContent = '';
+    });
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        el.classList.remove('error');
+    });
+}
+
+// Validation helpers
+function isValidEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+function isValidPhone(phone) {
+    const re = /^\+?[1-9]\d{1,14}$/;
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    return re.test(cleaned);
+}
+
+// Form submission
+document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!document.getElementById('termsAgree').checked) {
+        showFieldError('termsAgree', 'You must agree to the terms and conditions');
+        return;
+    }
+    
+    const payButton = document.getElementById('payButton');
+    payButton.disabled = true;
+    payButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    
+    try {
+        const formData = {
+            serviceType: document.querySelector('input[name="serviceType"]:checked').value,
+            travelDate: document.getElementById('travelDate').value,
+            travelTime: document.getElementById('travelTime').value,
+            adults: document.getElementById('adults').value,
+            children: document.getElementById('children').value,
+            infants: document.getElementById('infants').value,
+            transportation: document.getElementById('transportation').checked,
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            pagerName: document.getElementById('pagerName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            totalBags: document.getElementById('totalBags').value,
+            flightNumber: document.getElementById('flightNumber').value,
+            flightClass: document.getElementById('flightClass').value,
+            specialRequests: document.getElementById('specialRequests').value,
+            paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value,
+            totalAmount: parseFloat(document.getElementById('totalAmount').textContent.replace('$', ''))
+        };
+        
+        let totalUSD = formData.totalAmount;
+        const exchangeRate = 130;
+        const totalKES = totalUSD * exchangeRate;
+        const reference = 'MNG-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        
+        if (formData.paymentMethod === 'cash') {
+            await submitBooking(formData, reference, null, null);
+        } else {
+            await initiatePaystackPayment(formData, reference, totalKES, totalUSD);
+        }
+        
+    } catch (error) {
+        console.error('Booking error:', error);
+        alert('Error: ' + error.message);
+        resetPayButton();
+    }
+});
+
+async function submitBooking(formData, reference, paystackRef, paystackTransId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    
+    const response = await fetch('/actions/meet-greet/book', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+        },
+        body: JSON.stringify({
+            ...formData,
+            reference: reference,
+            paystackReference: paystackRef,
+            paystackTransactionId: paystackTransId
+        })
+    });
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+        throw new Error(result.errors?.server || Object.values(result.errors || {})[0] || 'Booking failed');
+    }
+    
+    window.location.href = '/meet-greet/success?ref=' + reference;
+}
+
+async function initiatePaystackPayment(formData, reference, amountKES, amountUSD) {
+    return new Promise((resolve, reject) => {
+        const handler = PaystackPop.setup({
+            key: paystackPublicKey,
+            email: formData.email,
+            amount: Math.round(amountKES * 100),
+            currency: 'KES',
+            ref: reference,
+            metadata: {
+                custom_fields: [
+                    { display_name: "Service Type", variable_name: "service_type", value: formData.serviceType },
+                    { display_name: "Passenger Name", variable_name: "passenger_name", value: `${formData.firstName} ${formData.lastName}` },
+                    { display_name: "Amount USD", variable_name: "amount_usd", value: `$${amountUSD.toFixed(2)}` },
+                    { display_name: "Amount KES", variable_name: "amount_kes", value: `KES ${amountKES.toFixed(2)}` }
+                ]
+            },
+            callback: async function(response) {
+                try {
+                    await submitBooking(formData, response.reference, response.reference, response.trans);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            },
+            onClose: function() {
+                alert('Payment window closed. You can complete your booking later using reference: ' + reference);
+                resetPayButton();
+                resolve();
+            }
+        });
+        
+        handler.openIframe();
+    });
+}
+
+function resetPayButton() {
+    const payButton = document.getElementById('payButton');
+    payButton.disabled = false;
+    payButton.innerHTML = '<i class="fas fa-lock me-2"></i>Complete Booking';
+}
+
+// Event listeners
+document.getElementById('travelDate').addEventListener('change', updateSummary);
+document.getElementById('adults').addEventListener('change', updateTotal);
+document.getElementById('children').addEventListener('change', updateTotal);
+document.getElementById('infants').addEventListener('change', updateSummary);
+document.getElementById('transportation').addEventListener('change', updateTotal);
+document.querySelectorAll('input[name="serviceType"]').forEach(radio => {
+    radio.addEventListener('change', updateSummary);
+});
+</script>
+
+{% endblock %}

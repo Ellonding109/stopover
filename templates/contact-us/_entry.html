@@ -1,0 +1,203 @@
+{% extends "_layouts/main" %}
+{% block content %}
+
+{% include "_includes/header" %}
+	
+	<!-- Map -->
+	<div class="contact-one_map">
+		<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d805184.6331292129!2d144.49266890254142!3d-37.97123689954809!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad646b5d2ba4df7%3A0x4045675218ccd90!2sMelbourne%20VIC%2C%20Australia!5e0!3m2!1sen!2s!4v1574408946759!5m2!1sen!2s" allowfullscreen=""></iframe>
+	</div>
+	<!-- End Map -->
+	
+	<!-- Contact One -->
+	<section class="contact-one">
+		<div class="auto-container">
+			<div class="inner-container">
+				<!-- Sec Title -->
+				<div class="sec-title centered">
+					<div class="sec-title_subtitle">Contact Us</div>
+					<h2 class="sec-title_heading">get in touch</h2>
+					<div class="sec-title_text">We are at your disposal 7 days a week!</div>
+				</div>
+				<div class="row clearfix">
+					<!-- Column -->
+					<div class="column col-lg-4 col-md-6 col-sm-12">
+						<!-- Address Info One -->
+						<ul class="address-info_one">
+							<li>
+								<span class="icon">
+									<img src="assets/images/icons/map-1.svg" alt="" />
+								</span>
+								<strong>Location</strong>
+								Kenya House Complex, 1st floor,Utalii Street, Nairobi.
+							</li>
+							<li>
+								<span class="icon">
+									<img src="assets/images/icons/phone.svg" alt="" />
+								</span>
+								<strong>Phone Number</strong>
+								<a href="tel:+254116818181">+254 116 81 81 81</a> <br>
+								
+							</li>
+							<li>
+								<span class="icon">
+									<img src="assets/images/icons/envelope.svg" alt="" />
+								</span>
+								<strong>Email us</strong>
+								<a href=""mailto:info@kenyastopover.com>info@kenyastopover.com</a>
+							</li>
+						</ul>
+						
+						<div class="contact_chats">
+							<div class="contact_chats-inner">
+								<div class="help-box_two">
+									<div class="help-box_two-image">
+										<img src="assets/images/whatsapp_call_icon.jpeg" alt="" />
+									</div>
+									<strong>Need help?</strong>
+									Call on Whatsapp our experts
+									<a class="phone" href="https://wa.me/254116818181">+254 116 81 81 81</a>
+								</div>
+								<!--<div class="help-box_two_btn">
+									<a href="#"><i class="fa-brands fa-rocketchat fa-fw"></i> chat with us</a>
+								</div>
+-->
+								
+								<div class="help-box_two_btn">
+									<a href="https://wa.me/254116818181?text=Hello!%20I%27m%20interested%20in%20learning%20more%20about%20Stop%20Over." 
+									target="_blank" 
+									rel="noopener noreferrer">
+										<i class="fa-brands fa-whatsapp fa-fw"></i> Chat on WhatsApp
+									</a>
+								</div>
+								<div class="help-box_two-timing">
+									Mondays - Friday
+									<span>8am - 5 pm</span>
+								</div>
+								
+							</div>
+						</div>
+						
+					</div>
+					
+					<!-- Column -->
+					<div class="column col-lg-8 col-md-6 col-sm-12">
+						<div class="contact-form_outer">
+							<h3>Leave A Reply</h3>
+							<div class="text">Your email address will not be published. Required fields are marked *</div>
+							<div class="comment-form contact-form">
+								<form method="post" action="/actions/contact/submit" id="contact-form">
+									<div class="row clearfix">
+										
+										<div class="col-lg-6 col-md-6 col-sm-12 form-group">
+											<input style="opacity:1" type="text" name="username" placeholder="Enter Your Name: *" required="">
+										</div>
+										
+										<div class="col-lg-6 col-md-6 col-sm-12 form-group">
+											<input type="text" name="email" placeholder="Email *" required="">
+										</div>
+										
+										<div class="col-lg-12 col-md-12 col-sm-12 form-group">
+											<input type="text" name="subject" placeholder="Subject" required="">
+										</div>
+										
+										<div class="col-lg-12 col-md-12 col-sm-12 form-group">
+											<textarea class="" name="message" placeholder="Comment"></textarea>
+										</div>
+										
+										<div class="form-group">
+											<div class="check-box">
+												<input type="checkbox" name="remember-password" id="type-1"> 
+												<label for="type-1">Save my name, email, and website in this browser for the next time I comment.</label>
+											</div>
+										</div>
+										
+										<div class="col-lg-12 col-md-12 col-sm-12 form-group">
+											<!-- Button Box -->
+											<div class="button-box">
+												<button type="submit" class="btn-style-one theme-btn">
+													<div class="btn-wrap">
+														<span class="text-one">Submit</span>
+														<!-- <span class="text-two">Submit</span> -->
+													</div>
+												</button>
+											</div>
+										</div>
+										
+									</div>
+								</form>
+								<!-- End Contact Form -->
+								<div id="contact-status" style="margin-top: 15px;"></div>
+							</div>
+
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		var form = document.getElementById('contact-form');
+		if (!form) return;
+
+		var statusEl = document.getElementById('contact-status');
+
+		form.addEventListener('submit', function(e) {
+			e.preventDefault();
+
+			var submitBtn = form.querySelector('button[type="submit"]');
+			var originalText = submitBtn.innerHTML;
+
+			// Show loading state
+			submitBtn.disabled = true;
+			submitBtn.querySelector('.text-one').textContent = 'Sending...';
+			statusEl.innerHTML = '<div class="alert alert-info" style="background:#E8F4FD;color:#0A3D62;padding:14px 18px;border-radius:8px;margin-top:15px;font-size:0.95rem;text-align:center;">⏳ Sending your message...</div>';
+
+			var formData = new FormData(form);
+
+			fetch('/actions/contact/submit', {
+				method: 'POST',
+				body: formData
+			})
+			.then(function(response) { return response.json(); })
+			.then(function(result) {
+				submitBtn.disabled = false;
+				submitBtn.querySelector('.text-one').textContent = 'Submit';
+
+				if (result.success) {
+					// Success message
+					statusEl.innerHTML = '<div class="alert alert-success" style="background:rgba(45,125,79,0.1);color:#2D7D4F;padding:20px 18px;border-radius:8px;margin-top:15px;text-align:center;border-left:4px solid #2D7D4F;">' +
+						'<p style="font-size:1.1rem;font-weight:700;margin:0 0 8px 0;">✓ Your message has been sent successfully!</p>' +
+						'<p style="margin:0;font-size:0.9rem;color:#1a6b3f;">We have received your inquiry and will get back to you within 24-48 hours.</p>' +
+						'</div>';
+					form.reset();
+
+					// Fade out success message after 8 seconds
+					setTimeout(function() {
+						statusEl.style.transition = 'opacity 0.5s ease';
+						statusEl.style.opacity = '0';
+						setTimeout(function() { statusEl.innerHTML = ''; statusEl.style.opacity = '1'; }, 500);
+					}, 8000);
+				} else {
+					// Error message
+					var errors = result.errors || {};
+					var errorMsg = Object.values(errors).join('<br>');
+					statusEl.innerHTML = '<div class="alert alert-error" style="background:rgba(199,67,61,0.1);color:#C7433D;padding:14px 18px;border-radius:8px;margin-top:15px;text-align:center;border-left:4px solid #C7433D;">' +
+						'<p style="margin:0;font-weight:600;">' + (errorMsg || 'Failed to send message. Please try again.') + '</p>' +
+						'</div>';
+				}
+			})
+			.catch(function(error) {
+				submitBtn.disabled = false;
+				submitBtn.querySelector('.text-one').textContent = 'Submit';
+				statusEl.innerHTML = '<div class="alert alert-error" style="background:rgba(199,67,61,0.1);color:#C7433D;padding:14px 18px;border-radius:8px;margin-top:15px;text-align:center;border-left:4px solid #C7433D;">' +
+					'<p style="margin:0;font-weight:600;">Network error. Please check your connection and try again.</p>' +
+					'</div>';
+			});
+		});
+	});
+	</script>
+
+{% endblock %}

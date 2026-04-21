@@ -1,0 +1,110 @@
+color: green
+description: 'For Kenya guides'
+fieldLayouts:
+  d84c7e06-a99a-4d5e-81a3-1dda679c2a77:
+    cardThumbAlignment: end
+    cardView:
+      - authors
+      - drafts
+      - type
+      - postDate
+      - 'layoutElement:5c9de4dc-ce54-475a-8240-18f1ae7d1674'
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-27T12:28:57+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            required: true
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: 5134c1ad-aa4a-4c02-8331-70ad648be379
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-02-05T02:44:34+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 583773bb-c99b-4af2-b0d2-831f43d66009 # Excerpt
+            handle: null
+            includeInCards: true
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: 5c9de4dc-ce54-475a-8240-18f1ae7d1674
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-01-27T20:57:58+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 22aa2642-9879-40d9-aa0e-28fb6ace4584 # Body
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: bdc7a20c-0389-4df5-be52-0e0b384e44cb
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-01-27T20:57:58+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 1e29e7d4-9352-42e0-8b25-317fdfe2f756 # Featured Image
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: true
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: bf044c1b-c158-4edd-aa07-3fb078431818
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: 28b0aa87-144b-4e2d-b060-165599ed810c
+        userCondition: null
+handle: guides
+hasTitleField: true
+icon: rss
+name: Guides
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: null
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

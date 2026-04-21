@@ -1,0 +1,29 @@
+headingLevels:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+name: Simple
+toolbar:
+  - heading
+  - '|'
+  - alignment
+  - bold
+  - italic
+  - underline
+  - strikethrough
+  - link
+  - fontSize
+  - fontColor
+  - fontBackgroundColor
+  - insertImage
+  - insertTable
+  - numberedList
+  - bulletedList
+  - blockQuote
+  - horizontalLine
+  - selectAll
+  - sourceEditing
+  - '|'

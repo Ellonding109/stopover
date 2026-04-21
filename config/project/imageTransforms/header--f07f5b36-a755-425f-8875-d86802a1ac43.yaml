@@ -1,0 +1,11 @@
+fill: null
+format: avif
+handle: header
+height: 300
+interlace: none
+mode: crop
+name: Header
+position: center-center
+quality: 100
+upscale: true
+width: 1920

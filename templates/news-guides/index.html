@@ -1,0 +1,195 @@
+{% extends "_layouts/main" %}
+{% block content %}
+
+{% include "_includes/header" %}
+
+<!-- Sidebar Page Container -->
+    <div class="sidebar-page-container">
+    	<div class="auto-container">
+        	<div class="row clearfix">
+				
+				<!-- Content Side -->
+                <div class="content-side col-xl-9 col-lg-8 col-md-12 col-sm-12">
+					<div class="blog-classic">
+						{% for entry in craft.entries.section('newsGuides').all %}
+						<!-- News Block Seven -->
+						<div class="news-block_seven">
+							<div class="news-block_seven-inner">
+								<div class="news-block_seven-image">
+									{% set image = entry.featuredImage.one() %}
+									{% if image %}
+									<a href="{{ entry.url }}"><img src="{{ image.getUrl('blogIndex') }}" alt="{{ image.title }}" /></a>
+									{% endif %}
+								</div>
+								<div class="news-block_seven-content">
+									<div class="news-block_seven-tag">Uncategorized</div>
+									<h3 class="news-block_seven-heading"><a href="{{ entry.url }}">{{ entry.title }}</a></h3>
+									<ul class="news-block_seven-meta">
+										<li><span class="lnr lnr-user"></span>{{ entry.author }}</li>
+										<li><span class="lnr lnr-calendar-full"></span>{{ entry.postDate|date('d F, Y') }}</li>
+									</ul>
+									<div class="news-block_seven-text">{{ entry.excerpt }}</div>
+									<a class="news-block_seven-more" href="{{ entry.url }}">Read More <i class="fa-classic fa-solid fa-arrow-right fa-fw"></i></a>
+								</div>
+							</div>
+						</div>
+						{% endfor %}				
+					
+						
+					</div>
+				</div>
+				
+				<!-- Sidebar Side -->
+                <div class="sidebar-side col-xl-3 col-lg-4 col-md-12 col-sm-12">
+                	<aside class="sidebar">
+						
+						<!-- Search Widget -->
+						<div class="sidebar-widget search-box">
+							<div class="widget-content">
+								<form method="post" action="contact.html">
+									<div class="form-group">
+										<input type="search" name="search-field" value="" placeholder="Search..." required>
+										<button type="submit"><span class="icon fa fa-search"></span></button>
+									</div>
+								</form>
+							</div>
+						</div>
+						
+						<!-- Search Widget -->
+						<div class="sidebar-widget_two search-widget">
+							<div class="sidebar-title_box">
+								<h6>blog categories</h6>
+							</div>
+							<div class="widget-content">
+								<ul class="cat-list">
+									<li>Tips and Tricks<span>(37)</span></li>
+									<li>Exploring<span>(13)</span></li>
+									<li>Off Topic<span>(53)</span></li>
+									<li>Travel<span>(03)</span></li>
+									<li>How To<span>(23)</span></li>
+									<li>How To<span>(93)</span></li>
+								</ul>
+							</div>
+						</div>
+						
+						<!-- Post Widget -->
+						<div class="sidebar-widget_two post-widget">
+							<div class="sidebar-title_box">
+								<h6>popular post</h6>
+							</div>
+							<div class="widget-content">
+								
+				
+{% set relatedPosts = craft.entries()
+    .section('newsGuides')    
+    .orderBy('postDate desc')
+    .limit(3)
+    .all()
+%}
+
+{% if relatedPosts|length %}
+    {% for post in relatedPosts %}
+        <div class="post">
+            <div class="thumb">
+                <a href="{{ post.url }}">
+                    {% if post.featuredImage|length %}
+                        <img src="{{ post.featuredImage.one().url }}" alt="{{ post.title }}">
+                    {% else %}
+                        <img src="assets/images/resource/post-thumb-3.jpg" alt="{{ post.title }}">
+                    {% endif %}
+                </a>
+            </div>
+            <div class="post-date">{{ post.postDate|date('M d, Y') }}</div>
+            <h6><a href="{{ post.url }}">{{ post.title }}</a></h6>
+        </div>
+    {% endfor %}
+{% endif %}
+								
+							</div>
+						</div>
+						
+						<!-- Newsletter Widget -->
+						<div class="newsletter-widget post-widget">
+							<div class="title-box">
+								<div class="icon">
+									<img src="assets/images/icons/mail.svg" alt="" />
+								</div>
+								<div class="title">Subscribe to Our Newsletter!</div>
+								<h4>get the latest news, updates, and amazing offers</h4>
+							</div>
+							<!-- Subscribe Form -->
+							<div class="subscribe-form_three">
+								<form method="post" action="/actions/newsletter/subscribe" id="newsletter-form">
+									<div class="form-group">
+										<input type="email" name="email" id="newsletter-email" value="" placeholder="Your Email" required>
+										<button type="submit" class="theme-btn">Subscribe <i class="fa-classic fa-solid fa-arrow-right fa-fw"></i></button>
+									</div>
+								</form>
+								<div id="newsletter-status" style="display:none;"></div>
+							</div>
+						</div>
+
+
+					</aside>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<!-- End Sidebar Page Container -->
+
+
+
+<script>
+(function() {
+    const form = document.getElementById('newsletter-form');
+    if (!form) return;
+
+    const emailInput = document.getElementById('newsletter-email');
+    const statusEl = document.getElementById('newsletter-status');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const btn = form.querySelector('button[type="submit"]');
+        const email = emailInput.value.trim();
+
+        if (!email) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Subscribing...';
+        statusEl.style.display = 'none';
+
+        try {
+            const formData = new FormData();
+            formData.append('email', email);
+
+            const response = await fetch('/actions/newsletter/subscribe', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            statusEl.style.display = 'block';
+
+            if (result.success) {
+                statusEl.innerHTML = '<div style="background:rgba(45,125,79,0.1);color:#2D7D4F;padding:14px 18px;border-radius:8px;margin-top:10px;font-size:0.9rem;line-height:1.5;">✓ ' + result.message + '</div>';
+                emailInput.value = '';
+            } else {
+                const errors = result.errors || {};
+                const msg = Object.values(errors).join('<br>');
+                statusEl.innerHTML = '<div style="background:rgba(199,67,61,0.1);color:#C7433D;padding:14px 18px;border-radius:8px;margin-top:10px;font-size:0.9rem;line-height:1.5;">' + (msg || 'Subscription failed.') + '</div>';
+            }
+        } catch (error) {
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<div style="background:rgba(199,67,61,0.1);color:#C7433D;padding:14px 18px;border-radius:8px;margin-top:10px;font-size:0.9rem;">Network error. Please try again.</div>';
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Subscribe now';
+    });
+})();
+</script>
+
+{% endblock %}

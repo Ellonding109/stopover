@@ -1,0 +1,53 @@
+color: blue
+description: null
+fieldLayouts:
+  35aca5f4-5b2f-4143-8e86-93b8916b563e:
+    cardThumbAlignment: end
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-27T16:52:53+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            required: true
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: 236b871d-5473-4617-a6ba-50c1aac2e711
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: 76faa9db-eb18-4c28-aaf9-e647892a4023
+        userCondition: null
+handle: etaApplication
+hasTitleField: true
+icon: pencil
+name: 'eTA Application'
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: null
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

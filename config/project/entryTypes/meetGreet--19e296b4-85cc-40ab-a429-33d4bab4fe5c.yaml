@@ -1,0 +1,87 @@
+color: sky
+description: null
+fieldLayouts:
+  5f59a7e0-fa95-4d50-a3db-16415d587b5a:
+    cardThumbAlignment: end
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-27T13:24:49+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            required: true
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: bd7d08a4-b25f-49f3-9340-dc15a95c5812
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-01-28T02:53:02+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 22aa2642-9879-40d9-aa0e-28fb6ace4584 # Body
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: 64c1716f-6995-4415-a36e-bc34853dc3b7
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-01-28T02:53:02+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 1e29e7d4-9352-42e0-8b25-317fdfe2f756 # Featured Image
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: 63f2b2fe-4b35-4511-9214-d56d0134b9b7
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: 755f1f4d-53c5-4a13-9e6a-62c70cb062da
+        userCondition: null
+handle: meetGreet
+hasTitleField: true
+icon: handshake-simple
+name: 'Meet & Greet'
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: null
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

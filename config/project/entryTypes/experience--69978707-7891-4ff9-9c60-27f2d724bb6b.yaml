@@ -1,0 +1,53 @@
+color: orange
+description: null
+fieldLayouts:
+  73143a0f-deed-4952-9437-98628817edeb:
+    cardThumbAlignment: end
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2026-01-28T03:03:54+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            required: true
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: 35d0bda5-5011-4afb-a030-995bc99ca589
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: db4607fd-64aa-4f23-a5b9-8c0ba3445ad5
+        userCondition: null
+handle: experience
+hasTitleField: true
+icon: car-on
+name: Experience
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: null
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

@@ -1,0 +1,86 @@
+dateModified: 1775684519
+email:
+  fromEmail: cms@kenyastopover.com
+  fromName: 'Kenya Stopover'
+  transportType: craft\mail\transportadapters\Sendmail
+fs:
+  local:
+    hasUrls: true
+    name: Local
+    settings:
+      path: '@webroot/assets/files'
+    type: craft\fs\Local
+    url: '@web/assets/files'
+meta:
+  __names__:
+    0bb28da8-3857-4ec0-b6f2-082b180fa057: Footer # Footer
+    0c68a584-0ae2-46bf-ba45-5d98c5d21b3d: 'Visa Consultation' # Visa Consultation
+    0c308421-b49b-4743-91bf-aad2c5118a6c: 'Meet & Greet' # Meet & Greet
+    1e29e7d4-9352-42e0-8b25-317fdfe2f756: 'Featured Image' # Featured Image
+    4da9d116-2192-4b68-8d3a-f4fd18f2c8e1: Homepage # Homepage
+    4f44b3d4-00c5-40c0-8ff7-d95effdac6f1: FAQs # FAQs
+    7c63d541-80f7-4487-b0cb-8b6f37114d04: 'Public Schema' # Public Schema
+    7d4c82a9-9eb4-463e-9aa0-8b2d015ebe56: 'News Categories' # News Categories
+    8cbc616b-661c-4840-a63b-5f4dccaa5564: 'News and Guides' # News and Guides
+    19e296b4-85cc-40ab-a429-33d4bab4fe5c: 'Meet & Greet' # Meet & Greet
+    22aa2642-9879-40d9-aa0e-28fb6ace4584: Body # Body
+    28ef47a4-2159-4170-8a53-edfd0ea31a4b: Guides # Guides
+    42f50bf6-6290-43df-a6c3-dc4381a9ee3a: 'eTA Visa' # eTA Visa
+    45cd8f60-6e02-4d5b-ac38-aac6fc1b13f9: 'Visa Consultation' # Visa Consultation
+    62ed8fb2-02e6-4354-aea7-1e16676cc2ed: 'eTA Application' # eTA Application
+    77ab522b-b7ba-4a8f-b805-d96a250ada26: Primary # Primary
+    78ac60c8-ca15-4ebc-a5c9-d3a73f64735f: 'eTA Index' # eTA Index
+    82df4320-9509-49c9-aac4-c195c5013236: 'Header Background' # Header Background
+    91b25543-258e-49e7-9f1c-7be976a9e2f1: 'eTA Application' # eTA Application
+    366d0d1b-668e-4852-a84c-e48d32bf121b: 'Kenya Stopover' # Kenya Stopover
+    417eea32-2f4d-454e-9147-2671893abdc6: New # New
+    608a6c03-78a2-48b1-bc42-2c38f7824997: 'News Tags' # News Tags
+    782c991d-ca31-45f5-8b67-e38711f247c8: 'About us' # About us
+    957dc299-ba09-4ec7-8f83-1ab8dc4dcb7f: 'Kenya Guidelines' # Kenya Guidelines
+    5151facf-44f8-410a-9bea-02b459f73fc4: 'Site Images' # Site Images
+    26799e9d-cbc6-4787-9eb4-cc8a7d6306bb: Application # Application
+    28864b17-bacc-4cbd-bd65-f7842447060e: 'Meet and Greet' # Meet and Greet
+    583773bb-c99b-4af2-b0d2-831f43d66009: Excerpt # Excerpt
+    831016d0-44dd-4102-911a-d3c60a2d7f4f: 'Kenya Stopover' # Kenya Stopover
+    69978707-7891-4ff9-9c60-27f2d724bb6b: Experience # Experience
+    a3f35d14-347e-421b-85cb-e4c2ad705acc: 'Contact us' # Contact us
+    a99deb33-51e6-4f52-a55b-9527e0b94e93: 'Blog Index' # Blog Index
+    b4698fa8-8c8f-4af0-b52d-a2e8aae4ac0f: News # News
+    bf73431f-224d-40be-9561-cae05e3d5a98: Default # Default
+    c65cba91-e8d7-4b1d-a45c-fd1f6e3858f5: Experiences # Experiences
+    c165fe62-0393-483b-8524-4cd8e76067c7: 'News & Guides' # News & Guides
+    c15203a1-9c79-41d4-a366-ab2338a85e3c: 'Kenya Guidelines' # Kenya Guidelines
+    c8654954-95b8-4861-ad70-430a3701f222: Applications # Applications
+    caa804cb-10bb-42db-a8e6-22566e2a03ba: 'Guided Experiences' # Guided Experiences
+    e1c828c9-8bd6-4349-bae4-d3b44914772a: Dummy # Dummy
+    f07f5b36-a755-425f-8875-d86802a1ac43: Header # Header
+    f200678d-4ec5-46c8-9951-5a09a503acae: Header # Header
+    fea71f3d-eeb2-489b-9f01-0557898b465c: Simple # Simple
+plugins:
+  ckeditor:
+    edition: standard
+    enabled: true
+    schemaVersion: 3.0.0.0
+  commerce:
+    edition: pro
+    enabled: true
+    licenseKey: SA9PGCXMA194V1BVGO1BYCNE
+    schemaVersion: 5.5.0.5
+  plausible:
+    edition: standard
+    enabled: true
+    schemaVersion: 2.0.0
+system:
+  edition: pro
+  live: true
+  name: 'Kenya Stopover'
+  retryDuration: null
+  schemaVersion: 5.8.0.3
+  timeZone: Africa/Nairobi
+users:
+  allowPublicRegistration: false
+  defaultGroup: null
+  photoSubpath: null
+  photoVolumeUid: null
+  require2fa: false
+  requireEmailVerification: true

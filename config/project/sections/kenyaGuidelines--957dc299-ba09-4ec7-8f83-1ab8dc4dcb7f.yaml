@@ -1,0 +1,21 @@
+defaultPlacement: end
+enableVersioning: true
+entryTypes:
+  -
+    uid: c15203a1-9c79-41d4-a366-ab2338a85e3c # Kenya Guidelines
+handle: kenyaGuidelines
+maxAuthors: 1
+name: 'Kenya Guidelines'
+previewTargets:
+  -
+    label: 'Primary entry page'
+    refresh: '1'
+    urlFormat: '{url}'
+propagationMethod: all
+siteSettings:
+  366d0d1b-668e-4852-a84c-e48d32bf121b: # Kenya Stopover
+    enabledByDefault: true
+    hasUrls: true
+    template: kenya-guidelines/_entry.twig
+    uriFormat: kenya-guidelines
+type: single

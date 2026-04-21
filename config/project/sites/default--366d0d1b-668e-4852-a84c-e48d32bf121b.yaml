@@ -1,0 +1,9 @@
+baseUrl: $PRIMARY_SITE_URL
+enabled: true
+handle: default
+hasUrls: true
+language: en
+name: 'Kenya Stopover'
+primary: true
+siteGroup: 831016d0-44dd-4102-911a-d3c60a2d7f4f # Kenya Stopover
+sortOrder: 1
