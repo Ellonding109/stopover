@@ -1,20 +1,29 @@
 <?php
+
+declare(strict_types=1);
+
 namespace modules\applicationform\controllers;
 
-use modules\applicationform\services\SubmissionService;
+$rootDir = dirname(__DIR__, 3);
+require_once $rootDir . '/services/PaymentService.php';
+require_once $rootDir . '/services/MeetGreetService.php';
+require_once $rootDir . '/helpers/notification.php';
+
+use helpers\Notification;
+use services\MeetGreetService;
+use services\PaymentService;
 
 class MeetGreetController
 {
-    private SubmissionService $service;
+    private PaymentService $paymentService;
+    private MeetGreetService $meetGreetService;
 
     public function __construct()
     {
-        $this->service = new SubmissionService();
+        $this->paymentService = new PaymentService();
+        $this->meetGreetService = new MeetGreetService();
     }
 
-    /**
-     * Handle Meet & Greet booking submission
-     */
     public function book(): array
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -22,96 +31,81 @@ class MeetGreetController
             return ['success' => false, 'errors' => ['method' => 'POST required']];
         }
 
-        try {
-            $rawBody = file_get_contents('php://input');
-            $data = json_decode($rawBody, true) ?? [];
+        $rawBody = file_get_contents('php://input');
+        $data = json_decode($rawBody, true) ?? [];
 
-            // Validate required fields
-            $required = [
-                'serviceType', 'firstName', 'lastName', 'pagerName', 
-                'email', 'phone', 'flightNumber', 'flightDate', 'flightTime', 'adults'
-            ];
-            $errors = [];
+        $required = [
+            'serviceType', 'firstName', 'lastName', 'pagerName', 'email', 'phone',
+            'flightNumber', 'flightDate', 'flightTime', 'adults', 'amount'
+        ];
 
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    $errors[$field] = 'This field is required';
-                }
+        $errors = [];
+        foreach ($required as $field) {
+            if (empty($data[$field]) && $data[$field] !== '0') {
+                $errors[$field] = 'This field is required';
             }
+        }
 
-            if (!empty($errors)) {
-                http_response_code(422);
-                return ['success' => false, 'errors' => $errors];
+        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Invalid email format';
+        }
+
+        if (!empty($data['phone'])) {
+            $cleanPhone = preg_replace('/[\s\-\(\)]/', '', $data['phone']);
+            if (!preg_match('/^\+?[1-9]\d{1,14}$/', $cleanPhone)) {
+                $errors['phone'] = 'Invalid phone number format';
             }
+        }
 
-            // Validate email
-            if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $errors['email'] = 'Invalid email format';
-            }
+        $amount = filter_var($data['amount'] ?? '', FILTER_VALIDATE_FLOAT);
+        if ($amount === false || $amount <= 0) {
+            $errors['amount'] = 'amount must be a positive number';
+        }
 
-            // Validate phone (basic international format)
-            if (!empty($data['phone'])) {
-                $cleanPhone = preg_replace('/[\s\-\(\)]/', '', $data['phone']);
-                if (!preg_match('/^\+?[1-9]\d{1,14}$/', $cleanPhone)) {
-                    $errors['phone'] = 'Invalid phone number format';
-                }
-            }
+        if (!empty($errors)) {
+            http_response_code(422);
+            return ['success' => false, 'errors' => $errors];
+        }
 
-            if (!empty($errors)) {
-                http_response_code(422);
-                return ['success' => false, 'errors' => $errors];
-            }
+        $reference = trim($data['reference'] ?? '');
+        if ($reference === '') {
+            $reference = 'KS-MG-' . strtoupper(uniqid()) . '-' . random_int(1000, 9999);
+        }
 
-            // Generate booking reference
-            $reference = 'MNG-' . strtoupper(uniqid()) . '-' . random_int(1000, 9999);
-            
-            // Calculate total (KES)
-            $adults = (int)($data['adults'] ?? 1);
-            $children = (int)($data['children'] ?? 0);
-            $infants = (int)($data['infants'] ?? 0);
-            
-            // Pricing: Adult=5000, Child=3000, Infant=0
-            $totalAmount = ($adults * 5000) + ($children * 3000);
+        // Create the meet-greet booking first so the webhook has a service record to update.
+        $bookingId = $this->meetGreetService->saveBooking([
+            'reference'        => $reference,
+            'full_name'        => trim($data['firstName'] . ' ' . $data['lastName']),
+            'email'            => $data['email'], 
+            'phone'            => $data['phone'] ?? '',
+            'flight_number'    => $data['flightNumber'] ?? '',
+            'airline'          => $data['airline'] ?? '',
+            'arrival_date'     => $data['flightDate'] ?? null,
+            'arrival_time'     => $data['flightTime'] ?? null,
+            'departure_date'   => $data['departureDate'] ?? null,
+            'passengers'       => (int) ($data['adults'] ?? 1) + (int) ($data['children'] ?? 0) + (int) ($data['infants'] ?? 0),
+            'service_option'   => $data['serviceOption'] ?? 'standard',
+            'special_requests' => $data['specialRequests'] ?? null,
+            'amount'           => (float) $amount,
+            'currency'         => strtoupper($data['currency'] ?? 'KES'),
+        ]);
 
-            // Save booking to database
-            $bookingId = $this->service->saveMeetGreetBooking([
-                'reference' => $reference,
-                'service_type' => $this->sanitize($data['serviceType']), // 'arrival' or 'departure'
-                'passenger_data' => json_encode($this->sanitizeArray($data)),
-                'total_amount' => $totalAmount,
-                'payment_status' => !empty($data['paymentReference']) ? 'paid' : 'pending',
-                'paystack_reference' => $data['paymentReference'] ?? null,
-                'paystack_transaction_id' => $data['transactionId'] ?? null,
-            ]);
-
-            if ($bookingId === false) {
-                throw new \RuntimeException('Failed to save booking');
-            }
-
-            // Send confirmation email
-            $this->service->sendMeetGreetConfirmation($data['email'], $reference, $data);
-
-            // Notify admin
-            $this->service->sendAdminMeetGreetNotification($reference, (int) $bookingId, $data);
-
-            return [
-                'success' => true,
-                'bookingId' => (int) $bookingId,
-                'bookingReference' => $reference,
-                'totalAmount' => $totalAmount,
-                'message' => 'Booking confirmed successfully'
-            ];
-
-        } catch (\Throwable $e) {
-            error_log('MeetGreet booking error: ' . $e->getMessage());
+        if ($bookingId === false) {
+            error_log('MeetGreet booking error: failed to save service booking');
             http_response_code(500);
             return ['success' => false, 'errors' => ['server' => 'Booking failed. Please try again.']];
         }
+
+        return [
+            'success' => true,
+            'bookingId' => (int) $bookingId,
+            'reference' => $reference,
+            'amount' => (float) $amount,
+            'currency' => strtoupper($data['currency'] ?? 'KES'),
+            'message' => 'Meet & Greet booking saved successfully',
+        ];
     }
 
-    /**
-     * Verify Paystack payment for Meet & Greet booking
-     */
     public function verifyPayment(): array
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -132,53 +126,50 @@ class MeetGreetController
         }
 
         try {
-            $paystackResponse = $this->service->verifyPaystackTransaction($reference);
+            $paystackResponse = $this->paymentService->verifyPaystackTransaction($reference);
             $paystackStatus = $paystackResponse['status'] ?? '';
             $paystackData = $paystackResponse['data'] ?? [];
             $paystackMessage = $paystackResponse['message'] ?? '';
 
             if ($paystackStatus === 'success') {
-                // Payment succeeded
-                $updated = $this->service->updateMeetGreetPaymentStatus((int) $bookingId, [
-                    'payment_status' => 'paid',
-                    'status' => 'confirmed',
-                    'paystack_reference' => $reference,
-                    'paystack_transaction_id' => $transactionId,
-                    'paystack_response' => json_encode($paystackData),
-                    'paid_at' => date('Y-m-d H:i:s'),
+                $this->paymentService->updateBookingStatus($reference, 'paid', [
+                    'transaction_id'   => $transactionId,
+                    'paystack_payload' => $paystackData,
                 ]);
 
-                if (!$updated) {
-                    throw new \RuntimeException('Failed to update payment status');
-                }
+                $this->meetGreetService->confirmPayment($reference, (string) $transactionId, $paystackData);
 
-                // Send payment confirmation
-                $this->service->sendMeetGreetPaymentConfirmation($reference);
-                $this->service->sendAdminMeetGreetPaymentNotification($reference, (int) $bookingId, 'settled');
+                try {
+                    Notification::customerPaymentConfirmed($this->meetGreetService->getBookingByReference($reference) ?? []);
+                } catch (\Throwable $e) {
+                    error_log('MeetGreet email notification failed: ' . $e->getMessage());
+                }
 
                 return [
                     'success' => true,
                     'message' => 'Payment verified and booking confirmed',
-                    'status' => 'settled',
+                    'status' => 'paid',
                 ];
+            }
 
-            } elseif ($paystackStatus === 'failed' || ($paystackData['status'] ?? '') === 'failed') {
-                $this->service->updateMeetGreetPaymentStatus((int) $bookingId, [
-                    'payment_status' => 'failed',
-                    'paystack_reference' => $reference,
-                    'paystack_transaction_id' => $transactionId,
+            if ($paystackStatus === 'failed' || ($paystackData['status'] ?? '') === 'failed') {
+                $this->paymentService->updateBookingStatus($reference, 'failed', [
+                    'transaction_id'   => $transactionId,
+                    'paystack_payload' => $paystackData,
                 ]);
+                $this->meetGreetService->updatePaymentOutcome($reference, 'failed', 'pending_payment', (string) $transactionId, $paystackData);
 
                 return [
                     'success' => false,
                     'errors' => ['payment' => 'Payment failed: ' . ($paystackMessage ?: 'Transaction declined')],
                 ];
-            } else {
-                return [
-                    'success' => false,
-                    'errors' => ['payment' => 'Payment not yet completed. You can retry with the same reference.'],
-                ];
             }
+
+            return [
+                'success' => false,
+                'errors' => ['payment' => 'Payment not yet completed. Please try again shortly.'],
+            ];
+
         } catch (\Throwable $e) {
             error_log('MeetGreet payment verification error: ' . $e->getMessage());
             http_response_code(500);
@@ -186,21 +177,23 @@ class MeetGreetController
         }
     }
 
+    public function info(): array
+    {
+        return [
+            'success' => true,
+            'service' => 'meetgreet',
+            'currencies' => ['KES'],
+            'payment_status' => 'pending',
+            'message' => 'Meet & Greet service endpoint is available.',
+        ];
+    }
+
     private function sanitize(string $input): string
     {
         return trim($input);
     }
-
-    private function sanitizeArray(array $data): array
-    {
-        $sanitized = [];
-        foreach ($data as $key => $value) {
-            if (is_string($value)) {
-                $sanitized[$key] = $this->sanitize($value);
-            } else {
-                $sanitized[$key] = $value;
-            }
-        }
-        return $sanitized;
-    }
 }
+
+
+
+

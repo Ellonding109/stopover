@@ -4,6 +4,24 @@ if (strpos($_SERVER['REQUEST_URI'], '/actions/') === 0) {
     require dirname(__DIR__) . '/modules/bootstrap.php';
     exit;
 }
+// ─── Payment Routes ───
+if (strpos($_SERVER['REQUEST_URI'], '/payment/') === 0) {
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $file = dirname(__DIR__) . $path . '.php';
+    if (file_exists($file)) {
+        require $file;
+        exit;
+    }
+}
+// ─── API Routes ───
+if (strpos($_SERVER['REQUEST_URI'], '/api/') === 0) {
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $file = dirname(__DIR__) . $path . '.php';
+    if (file_exists($file)) {
+        require $file;
+        exit;
+    }
+}
 // ─── End ───
 
 /**

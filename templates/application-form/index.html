@@ -1,6 +1,6 @@
 {% extends "_layouts/main" %}
-{% block content %}
 
+{% block content %}
 {% include "_includes/header" %}
 
 <!-- THIS HERE IS FOR THE ETA-APPLICATION  -->
@@ -9,6 +9,10 @@
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://js.paystack.co/v1/inline.js"></script>
+    <!-- Include shared payment handler -->
+    <script src="assets/js/payment-handler.js"></script>
+    <script src="assets/js/paystack-checkout.js"></script>
+    
     <style>
         :root {
             --primary: #0A3D62;
@@ -1225,1725 +1229,1059 @@
         </div>
     </div>
 
-    <!-- Flatpickr JS -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script>
-        let currentStep = 1;
-        const totalSteps = 6;
-        let travelers = [];
-        let travelerCount = 0;
-        let currentApplicationId = null; // Store application ID after submission
-        let datePickers = {}; // Store date picker instances
+ <!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ siteUrl }}assets/js/payment-handler.js"></script>
 
-        // Pricing configuration (in KES - Kenyan Shillings)
-        const pricing = {
-            eta: 6500.00,        // $50 × 130
-            stopover_tour: 9100.00,  // $70 × 130
-            meet_greet: 13000.00    // $100 × 130
-        };
+<script>
+let currentStep = 1;
+const totalSteps = 6;
+let travelers = [];
+let travelerCount = 0;
+let currentApplicationId = null;
+let datePickers = {};
 
-        // Dynamically get the price for an additional traveler based on the primary user's selected service
-        function getTravelerPrice(formData) {
-            if (formData.get('service_eta')) return pricing.eta;
-            if (formData.get('service_meetgreet')) return pricing.meet_greet;
-            if (formData.get('service_tour')) return pricing.stopover_tour;
-            return pricing.eta; // fallback
-        }
+// Pricing configuration (in KES)
+const pricing = {
+    eta: 6500.00,
+    stopover_tour: 9100.00,
+    meet_greet: 13000.00
+};
 
-        // Paystack Public Key - injected from server (.env)
-        const paystackPublicKey = '{{ getenv("PAYSTACK_PUBLIC_KEY") }}';
+// Initialize payment handler for ETA
+const paymentHandler = new PaymentHandler({
+    publicKey: '{{ getenv("PAYSTACK_PUBLIC_KEY") }}',
+    exchangeRate: 130,
+    applicationType: 'eta'
+});
 
-        // Paystack webhook URL for server-to-server confirmation
-        // Configure this exact path in your Paystack dashboard Webhook settings.
-        const paystackWebhookUrl = '/actions/application-form/application/webhook';
-
-        // Initialize Flatpickr for date inputs
-        function initializeDatePickers() {
-            const today = new Date();
-            
-            // Date of Birth - max 18 years ago
-            datePickers.dateOfBirth = flatpickr("#dateOfBirth", {
-                dateFormat: "m/d/Y",
-                maxDate: new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()),
-                placeholder: "Date of birth"
-            });
-
-            // Passport Issue Date - max today
-            datePickers.passportIssueDate = flatpickr("#passportIssueDate", {
-                dateFormat: "m/d/Y",
-                maxDate: "today",
-                placeholder: "Issue date"
-            });
-
-            // Passport Expiry Date - min 6 months from now
-            datePickers.passportExpiryDate = flatpickr("#passportExpiryDate", {
-                dateFormat: "m/d/Y",
-                minDate: new Date(today.getFullYear(), today.getMonth() + 6, today.getDate()),
-                placeholder: "Expiry date"
-            });
-
-            // Arrival Date - min today
-            datePickers.arrivalDate = flatpickr("#arrivalDate", {
-                dateFormat: "m/d/Y",
-                minDate: "today",
-                placeholder: "Arrival date",
-                onChange: function(selectedDates, dateStr) {
-                    // Update departure date min to be after arrival
-                    if (datePickers.departureDate) {
-                        const arrival = selectedDates[0];
-                        const nextDay = new Date(arrival);
-                        nextDay.setDate(nextDay.getDate() + 1);
-                        datePickers.departureDate.set("minDate", nextDay);
-                    }
-                }
-            });
-
-            // Departure Date - min today (will be updated when arrival is selected)
-            datePickers.departureDate = flatpickr("#departureDate", {
-                dateFormat: "m/d/Y",
-                minDate: "today",
-                placeholder: "Departure date"
-            });
-        }
-
-        // Handle service card selection
-        function toggleService(card) {
-            const checkbox = card.querySelector('input[type="checkbox"]');
-            checkbox.checked = !checkbox.checked;
-            card.classList.toggle('selected', checkbox.checked);
-        }
-
-        // Update progress bar
-        function updateProgress() {
-            const progressLine = document.getElementById('progressLine');
-            const progressPercent = ((currentStep - 1) / (totalSteps - 1)) * 100;
-            progressLine.style.width = progressPercent + '%';
-
-            // Update step indicators
-            document.querySelectorAll('.step').forEach((step, index) => {
-                const stepNum = index + 1;
-                step.classList.remove('active', 'completed');
-                
-                if (stepNum < currentStep) {
-                    step.classList.add('completed');
-                } else if (stepNum === currentStep) {
-                    step.classList.add('active');
-                }
-            });
-        }
-
-        // Helper functions for inline error messages
-        function showFieldError(fieldId, message) {
-            const field = document.getElementById(fieldId);
-            const errorElement = document.getElementById(fieldId + '-error');
-            
-            if (field) {
-                field.classList.add('error');
-                field.classList.remove('success');
-            }
-            
-            if (errorElement && message) {
-                errorElement.textContent = message;
-                errorElement.classList.add('visible');
+// Initialize Flatpickr
+function initializeDatePickers() {
+    const today = new Date();
+    
+    datePickers.dateOfBirth = flatpickr("#dateOfBirth", {
+        dateFormat: "m/d/Y",
+        maxDate: new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()),
+        placeholder: "Date of birth"
+    });
+    
+    datePickers.passportIssueDate = flatpickr("#passportIssueDate", {
+        dateFormat: "m/d/Y",
+        maxDate: "today",
+        placeholder: "Issue date"
+    });
+    
+    datePickers.passportExpiryDate = flatpickr("#passportExpiryDate", {
+        dateFormat: "m/d/Y",
+        minDate: new Date(today.getFullYear(), today.getMonth() + 6, today.getDate()),
+        placeholder: "Expiry date"
+    });
+    
+    datePickers.arrivalDate = flatpickr("#arrivalDate", {
+        dateFormat: "m/d/Y",
+        minDate: "today",
+        placeholder: "Arrival date",
+        onChange: function(selectedDates, dateStr) {
+            if (datePickers.departureDate) {
+                const arrival = selectedDates[0];
+                const nextDay = new Date(arrival);
+                nextDay.setDate(nextDay.getDate() + 1);
+                datePickers.departureDate.set("minDate", nextDay);
             }
         }
+    });
+    
+    datePickers.departureDate = flatpickr("#departureDate", {
+        dateFormat: "m/d/Y",
+        minDate: "today",
+        placeholder: "Departure date"
+    });
+}
 
-        function clearFieldError(fieldId) {
-            const field = document.getElementById(fieldId);
-            const errorElement = document.getElementById(fieldId + '-error');
-            
-            if (field) {
-                field.classList.remove('error');
-                field.classList.add('success');
-            }
-            
-            if (errorElement) {
-                errorElement.classList.remove('visible');
-                errorElement.textContent = '';
-            }
+// Service toggle
+function toggleService(card) {
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    card.classList.toggle('selected', checkbox.checked);
+}
+
+// Progress update
+function updateProgress() {
+    const progressLine = document.getElementById('progressLine');
+    const progressPercent = ((currentStep - 1) / (totalSteps - 1)) * 100;
+    progressLine.style.width = progressPercent + '%';
+    
+    document.querySelectorAll('.step').forEach((step, index) => {
+        const stepNum = index + 1;
+        step.classList.remove('active', 'completed');
+        if (stepNum < currentStep) {
+            step.classList.add('completed');
+        } else if (stepNum === currentStep) {
+            step.classList.add('active');
         }
+    });
+}
 
-        function clearAllErrors() {
-            document.querySelectorAll('.error-message').forEach(el => {
-                el.classList.remove('visible');
-                el.textContent = '';
-            });
-            document.querySelectorAll('input, select, textarea').forEach(el => {
-                el.classList.remove('error');
-            });
+// Error helpers
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorElement = document.getElementById(fieldId + '-error');
+    
+    if (field) {
+        field.classList.add('error');
+        field.classList.remove('success');
+    }
+    
+    if (errorElement && message) {
+        errorElement.textContent = message;
+        errorElement.classList.add('visible');
+    }
+}
+
+function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    const errorElement = document.getElementById(fieldId + '-error');
+    
+    if (field) {
+        field.classList.remove('error');
+        field.classList.add('success');
+    }
+    
+    if (errorElement) {
+        errorElement.classList.remove('visible');
+        errorElement.textContent = '';
+    }
+}
+
+function clearAllErrors() {
+    document.querySelectorAll('.error-message').forEach(el => {
+        el.classList.remove('visible');
+        el.textContent = '';
+    });
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        el.classList.remove('error');
+    });
+}
+
+// Navigation
+function nextStep() {
+    clearAllErrors();
+    const currentFormStep = document.querySelector(`.form-step[data-step="${currentStep}"]`);
+    let isValid = true;
+    let firstErrorField = null;
+    
+    if (currentStep === 1) {
+        const servicesChecked = currentFormStep.querySelectorAll('input[type="checkbox"]:checked');
+        if (servicesChecked.length === 0) {
+            showFieldError('service_eta', 'Please select at least one eTA category to continue');
+            return;
         }
-
-        // Next step with comprehensive validation
-        function nextStep() {
-            clearAllErrors();
-            const currentFormStep = document.querySelector(`.form-step[data-step="${currentStep}"]`);
-            let isValid = true;
-            let firstErrorField = null;
-
-            // Validate based on current step
-            if (currentStep === 1) {
-                // Step 1: Services - at least one must be selected
-                const servicesChecked = currentFormStep.querySelectorAll('input[type="checkbox"]:checked');
-                if (servicesChecked.length === 0) {
-                    showFieldError('service_eta', 'Please select at least one eTA category to continue');
-                    return;
-                }
-            }
-
-            if (currentStep === 2) {
-                // Step 2: Personal Information
-                const inputs = currentFormStep.querySelectorAll('input[required], select[required], textarea[required]');
-                
-                for (let input of inputs) {
-                    const fieldId = input.id;
-                    
-                    if (!input.value && input.type !== 'radio' && input.type !== 'checkbox') {
-                        isValid = false;
-                        showFieldError(fieldId, 'This field is required');
-                        if (!firstErrorField) firstErrorField = fieldId;
-                    } else if (input.type === 'text' && input.id.includes('Date')) {
-                        // Validate date fields
-                        const dateError = validateDateField(input);
-                        if (dateError) {
-                            isValid = false;
-                            showFieldError(fieldId, dateError);
-                            if (!firstErrorField) firstErrorField = fieldId;
-                        } else {
-                            clearFieldError(fieldId);
-                        }
-                    } else {
-                        clearFieldError(fieldId);
-                    }
-                }
-                
-                // Validate email format
-                const email = document.getElementById('email').value;
-                if (email && !isValidEmail(email)) {
+    }
+    
+    if (currentStep === 2) {
+        const inputs = currentFormStep.querySelectorAll('input[required], select[required], textarea[required]');
+        for (let input of inputs) {
+            const fieldId = input.id;
+            if (!input.value && input.type !== 'radio' && input.type !== 'checkbox') {
+                isValid = false;
+                showFieldError(fieldId, 'This field is required');
+                if (!firstErrorField) firstErrorField = fieldId;
+            } else if (input.type === 'text' && input.id.includes('Date')) {
+                const dateError = validateDateField(input);
+                if (dateError) {
                     isValid = false;
-                    showFieldError('email', 'Please enter a valid email address (e.g., user@example.com)');
-                    if (!firstErrorField) firstErrorField = 'email';
+                    showFieldError(fieldId, dateError);
+                    if (!firstErrorField) firstErrorField = fieldId;
+                } else {
+                    clearFieldError(fieldId);
                 }
-                
-                // Validate phone format (international)
-                const phone = document.getElementById('phone').value;
-                if (phone && !isValidPhone(phone)) {
-                    isValid = false;
-                    showFieldError('phone', 'Please enter a valid phone number (e.g., +254701234567)');
-                    if (!firstErrorField) firstErrorField = 'phone';
-                }
-                
-                // Validate passport number (alphanumeric, 6-12 chars)
-                const passport = document.getElementById('passportNumber').value;
-                if (passport && !isValidPassport(passport)) {
-                    isValid = false;
-                    showFieldError('passportNumber', 'Please enter a valid passport number (6-12 alphanumeric characters)');
-                    if (!firstErrorField) firstErrorField = 'passportNumber';
-                }
-                
-                // Validate passport expiry is after issue date
-                const issueDate = document.getElementById('passportIssueDate').value;
-                const expiryDate = document.getElementById('passportExpiryDate').value;
-                if (issueDate && expiryDate && new Date(expiryDate) <= new Date(issueDate)) {
-                    isValid = false;
-                    showFieldError('passportExpiryDate', 'Passport expiry date must be after the issue date');
-                    if (!firstErrorField) firstErrorField = 'passportExpiryDate';
-                }
-                
-                if (!isValid) {
-                    // Scroll to first error field
-                    if (firstErrorField) {
-                        document.getElementById(firstErrorField).scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    return;
-                }
-            }
-
-            if (currentStep === 3) {
-                // Step 3: Travelers — validate Adult and Dependent travelers
-                // Skip selection panels (id ends with _selection), only validate actual traveler cards
-                const travelerCards = document.querySelectorAll('.traveler-card:not([id$="_selection"])');
-                const primaryPassport = document.getElementById('passportNumber')?.value?.trim().toUpperCase() || '';
-                const allPassports = primaryPassport ? [primaryPassport] : [];
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                for (let card of travelerCards) {
-                    const cardId = card.id;
-                    const typeInput = card.querySelector(`input[name="${cardId}_type"]`);
-                    const travelerType = typeInput ? typeInput.value : 'adult';
-
-                    if (travelerType === 'adult') {
-                        // ===== ADULT VALIDATION =====
-                        const fields = [
-                            { id: `${cardId}_firstName`, label: 'First name' },
-                            { id: `${cardId}_lastName`, label: 'Last name' },
-                            { id: `${cardId}_dateOfBirth`, label: 'Date of birth' },
-                            { id: `${cardId}_nationality`, label: 'Nationality' },
-                            { id: `${cardId}_email`, label: 'Email' },
-                            { id: `${cardId}_phone`, label: 'Phone' },
-                            { id: `${cardId}_passportNumber`, label: 'Passport number' },
-                            { id: `${cardId}_passportIssueDate`, label: 'Passport issue date' },
-                            { id: `${cardId}_passportExpiryDate`, label: 'Passport expiry date' }
-                        ];
-
-                        for (const field of fields) {
-                            const input = document.getElementById(field.id);
-                            if (!input || !input.value.trim()) {
-                                isValid = false;
-                                if (input) showFieldError(field.id, `${field.label} is required`);
-                                if (!firstErrorField) firstErrorField = field.id;
-                            }
-                        }
-
-                        // Date of Birth — must be 18+
-                        const dobInput = document.getElementById(`${cardId}_dateOfBirth`);
-                        if (dobInput && dobInput.value) {
-                            const dob = new Date(dobInput.value);
-                            dob.setHours(0, 0, 0, 0);
-                            const age = today.getFullYear() - dob.getFullYear();
-                            const m = today.getMonth() - dob.getMonth();
-                            const finalAge = (m < 0 || (m === 0 && today.getDate() < dob.getDate())) ? age - 1 : age;
-                            if (finalAge < 18) {
-                                isValid = false;
-                                showFieldError(`${cardId}_dateOfBirth`, 'Adult travelers must be at least 18 years old.');
-                                if (!firstErrorField) firstErrorField = `${cardId}_dateOfBirth`;
-                            } else if (finalAge > 100) {
-                                isValid = false;
-                                showFieldError(`${cardId}_dateOfBirth`, 'Please enter a valid date of birth.');
-                                if (!firstErrorField) firstErrorField = `${cardId}_dateOfBirth`;
-                            }
-                        }
-
-                        // Email validation
-                        const emailInput = document.getElementById(`${cardId}_email`);
-                        if (emailInput && emailInput.value && !isValidEmail(emailInput.value)) {
-                            isValid = false;
-                            showFieldError(`${cardId}_email`, 'Please enter a valid email address');
-                            if (!firstErrorField) firstErrorField = `${cardId}_email`;
-                        }
-
-                        // Phone validation
-                        const phoneInput = document.getElementById(`${cardId}_phone`);
-                        if (phoneInput && phoneInput.value && !isValidPhone(phoneInput.value)) {
-                            isValid = false;
-                            showFieldError(`${cardId}_phone`, 'Please enter a valid phone number');
-                            if (!firstErrorField) firstErrorField = `${cardId}_phone`;
-                        }
-
-                        // Passport issue/expiry date validation
-                        const issueInput = document.getElementById(`${cardId}_passportIssueDate`);
-                        if (issueInput && issueInput.value) {
-                            const issueDate = new Date(issueInput.value);
-                            issueDate.setHours(0, 0, 0, 0);
-                            if (issueDate > today) {
-                                isValid = false;
-                                showFieldError(`${cardId}_passportIssueDate`, 'Passport issue date cannot be in the future.');
-                                if (!firstErrorField) firstErrorField = `${cardId}_passportIssueDate`;
-                            }
-                        }
-
-                        const expiryInput = document.getElementById(`${cardId}_passportExpiryDate`);
-                        if (expiryInput && expiryInput.value) {
-                            const expiryDate = new Date(expiryInput.value);
-                            expiryDate.setHours(0, 0, 0, 0);
-                            const sixMonthsFromNow = new Date(today);
-                            sixMonthsFromNow.setMonth(today.getMonth() + 6);
-                            if (expiryDate < sixMonthsFromNow) {
-                                isValid = false;
-                                showFieldError(`${cardId}_passportExpiryDate`, 'Passport must be valid for at least 6 months.');
-                                if (!firstErrorField) firstErrorField = `${cardId}_passportExpiryDate`;
-                            }
-                        }
-
-                        // Passport duplicate check
-                        const passportInput = document.getElementById(`${cardId}_passportNumber`);
-                        if (passportInput && passportInput.value) {
-                            const currentPassport = passportInput.value.trim().toUpperCase();
-                            if (!isValidPassport(currentPassport)) {
-                                isValid = false;
-                                showFieldError(`${cardId}_passportNumber`, 'Please enter a valid passport number (6-12 alphanumeric characters)');
-                                if (!firstErrorField) firstErrorField = `${cardId}_passportNumber`;
-                            } else if (allPassports.includes(currentPassport)) {
-                                isValid = false;
-                                showFieldError(`${cardId}_passportNumber`, 'This passport number is already used by another traveler');
-                                if (!firstErrorField) firstErrorField = `${cardId}_passportNumber`;
-                            } else {
-                                allPassports.push(currentPassport);
-                            }
-                        }
-
-                    } else {
-                        // ===== DEPENDENT VALIDATION =====
-                        const fields = [
-                            { id: `${cardId}_fullName`, label: 'Full name' },
-                            { id: `${cardId}_relationship`, label: 'Relationship' },
-                            { id: `${cardId}_dateOfBirth`, label: 'Date of birth' },
-                            { id: `${cardId}_passportNumber`, label: 'Passport number' }
-                        ];
-
-                        for (const field of fields) {
-                            const input = document.getElementById(field.id);
-                            if (!input || !input.value.trim()) {
-                                isValid = false;
-                                if (input) showFieldError(field.id, `${field.label} is required`);
-                                if (!firstErrorField) firstErrorField = field.id;
-                            }
-                        }
-
-                        // Date of Birth — must not be in the future
-                        const dobInput = document.getElementById(`${cardId}_dateOfBirth`);
-                        if (dobInput && dobInput.value) {
-                            const dob = new Date(dobInput.value);
-                            dob.setHours(0, 0, 0, 0);
-                            if (dob > today) {
-                                isValid = false;
-                                showFieldError(`${cardId}_dateOfBirth`, 'Date of birth cannot be in the future.');
-                                if (!firstErrorField) firstErrorField = `${cardId}_dateOfBirth`;
-                            } else {
-                                const age = today.getFullYear() - dob.getFullYear();
-                                if (age > 100 || age < 0) {
-                                    isValid = false;
-                                    showFieldError(`${cardId}_dateOfBirth`, 'Please enter a valid date of birth.');
-                                    if (!firstErrorField) firstErrorField = `${cardId}_dateOfBirth`;
-                                }
-                            }
-                        }
-
-                        // Guardian agreement
-                        const guardianAgree = document.getElementById(`${cardId}_guardianAgree`);
-                        if (guardianAgree && !guardianAgree.checked) {
-                            isValid = false;
-                            showFieldError(`${cardId}_guardianAgree`, 'Guardian agreement is required for dependent travelers');
-                            if (!firstErrorField) firstErrorField = `${cardId}_guardianAgree`;
-                        }
-
-                        // Passport duplicate check
-                        const passportInput = document.getElementById(`${cardId}_passportNumber`);
-                        if (passportInput && passportInput.value) {
-                            const currentPassport = passportInput.value.trim().toUpperCase();
-                            if (!isValidPassport(currentPassport)) {
-                                isValid = false;
-                                showFieldError(`${cardId}_passportNumber`, 'Please enter a valid passport number (6-12 alphanumeric characters)');
-                                if (!firstErrorField) firstErrorField = `${cardId}_passportNumber`;
-                            } else if (allPassports.includes(currentPassport)) {
-                                isValid = false;
-                                showFieldError(`${cardId}_passportNumber`, 'This passport number is already used by another traveler');
-                                if (!firstErrorField) firstErrorField = `${cardId}_passportNumber`;
-                            } else {
-                                allPassports.push(currentPassport);
-                            }
-                        }
-                    }
-                }
-                if (!isValid && firstErrorField) {
-                    document.getElementById(firstErrorField).scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
-            }
-
-            if (currentStep === 4) {
-                // Step 4: Travel Details
-                const inputs = currentFormStep.querySelectorAll('input[required], select[required], textarea[required]');
-                for (let input of inputs) {
-                    const fieldId = input.id;
-                    if (!input.value && input.type !== 'radio' && input.type !== 'checkbox') {
-                        isValid = false;
-                        showFieldError(fieldId, 'This field is required');
-                        if (!firstErrorField) firstErrorField = fieldId;
-                    } else if (input.type === 'text' && input.id.includes('Date')) {
-                        const dateError = validateDateField(input);
-                        if (dateError) {
-                            isValid = false;
-                            showFieldError(fieldId, dateError);
-                            if (!firstErrorField) firstErrorField = fieldId;
-                        } else {
-                            clearFieldError(fieldId);
-                        }
-                    } else {
-                        clearFieldError(fieldId);
-                    }
-                }
-
-                // Validate departure is after arrival
-                const arrivalDate = document.getElementById('arrivalDate').value;
-                const departureDate = document.getElementById('departureDate').value;
-                
-                if (arrivalDate && departureDate) {
-                    const arrival = new Date(arrivalDate);
-                    const departure = new Date(departureDate);
-                    
-                    if (departure <= arrival) {
-                        isValid = false;
-                        showFieldError('departureDate', 'Departure date must be after your arrival date. Please check your travel dates.');
-                        if (!firstErrorField) firstErrorField = 'departureDate';
-                    }
-                }
-                
-                // Validate accommodation is not empty
-                const accommodation = document.getElementById('accommodation').value.trim();
-                if (!accommodation) {
-                    isValid = false;
-                    showFieldError('accommodation', 'Please provide your accommodation address in Kenya');
-                    if (!firstErrorField) firstErrorField = 'accommodation';
-                }
-                
-                // Validate purpose is selected
-                const purposeSelected = document.querySelector('input[name="purpose"]:checked');
-                if (!purposeSelected) {
-                    isValid = false;
-                    showFieldError('purpose', 'Please select your purpose of visit');
-                    if (!firstErrorField) firstErrorField = 'purpose';
-                }
-
-                if (!isValid) {
-                    if (firstErrorField) {
-                        document.getElementById(firstErrorField).scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    return;
-                }
-            }
-
-            if (currentStep === 5) {
-                // Step 5: Documents & Review
-                if (!document.getElementById('termsAgree').checked) {
-                    showFieldError('termsAgree', 'You must agree to the terms and conditions');
-                    return;
-                }
-                
-                // Validate file uploads
-                const passportFile = document.getElementById('passportUpload').files[0];
-                const photoFile = document.getElementById('photoUpload').files[0];
-                const itineraryFile = document.getElementById('itineraryUpload').files[0];
-                const accommodationFile = document.getElementById('accommodationUpload').files[0];
-                
-                if (!passportFile) {
-                    showFieldError('passportUpload', 'Please upload your passport');
-                    return;
-                }
-                if (!photoFile) {
-                    showFieldError('photoUpload', 'Please upload your passport photo');
-                    return;
-                }
-                if (!itineraryFile) {
-                    showFieldError('itineraryUpload', 'Please upload your travel itinerary');
-                    return;
-                }
-                if (!accommodationFile) {
-                    showFieldError('accommodationUpload', 'Please upload your accommodation booking');
-                    return;
-                }
-                
-                // Validate file sizes (max 5MB)
-                const maxFileSize = 5 * 1024 * 1024; // 5MB
-                const files = [passportFile, photoFile, itineraryFile, accommodationFile];
-                for (let file of files) {
-                    if (file.size > maxFileSize) {
-                        alert(`File "${file.name}" exceeds 5MB limit. Please compress and re-upload.`);
-                        return;
-                    }
-                }
-                
-                // Populate review before proceeding
-                populateReview();
-            }
-
-            if (currentStep === 5) {
-                // Moving to payment
-                populatePaymentSummary();
-            }
-
-            if (currentStep < totalSteps) {
-                currentFormStep.classList.remove('active');
-                currentStep++;
-                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
-                updateProgress();
-
-                setTimeout(() => {
-					const formContainer = document.querySelector('.form-container');
-					if (formContainer) {
-						formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-					}
-				}, 50);
-                // REMOVED: window.scrollTo({ top: 0, behavior: 'smooth' });
-                
-            }
-          
-        }
-
-        // Helper validation functions
-        function isValidEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
-
-        function isValidPhone(phone) {
-            // International phone format: +XXX XXXXXXXXXX
-            const re = /^\+?[1-9]\d{1,14}$/;
-            const cleaned = phone.replace(/[\s\-\(\)]/g, '');
-            return re.test(cleaned);
-        }
-
-        function isValidPassport(passport) {
-            // Alphanumeric, 6-12 characters
-            const re = /^[A-Za-z0-9]{6,12}$/;
-            return re.test(passport);
-        }
-
-        // Previous step
-        function prevStep() {
-            if (currentStep > 1) {
-                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
-                currentStep--;
-                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
-                updateProgress();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        // Populate review section with comprehensive details
-        function populateReview() {
-            const form = document.getElementById('applicationForm');
-            const formData = new FormData(form);
-            
-            let reviewHTML = '<div style="background: var(--bg-light); padding: 30px; border-radius: 12px;">';
-            
-            // ===== SELECTED SERVICES =====
-            reviewHTML += '<div style="margin-bottom: 30px;">';
-            reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">📋 Selected Services</h3>';
-            const services = [];
-            if (formData.get('service_eta')) services.push('<span style="color: var(--success);">✓</span> eTA Visa Application (KES ' + pricing.eta.toFixed(2) + ')');
-            if (formData.get('service_tour')) services.push('<span style="color: var(--success);">✓</span> One Day eTA (From KES ' + pricing.stopover_tour.toFixed(2) + ')');
-            if (formData.get('service_meetgreet')) services.push('<span style="color: var(--success);">✓</span> Premium Same-Day eTA (KES ' + pricing.meet_greet.toFixed(2) + ')');
-            reviewHTML += '<div style="background: white; padding: 15px; border-radius: 8px;">' + 
-                (services.length > 0 ? services.join('<br>') : '<span style="color: var(--error);">⚠ No services selected</span>') + 
-                '</div>';
-            reviewHTML += '</div>';
-
-            // ===== PRIMARY APPLICANT =====
-            reviewHTML += '<div style="margin-bottom: 30px;">';
-            reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">👤 Primary Applicant Information</h3>';
-            reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px;">';
-            reviewHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Full Name:</strong><br><span style="color: var(--primary); font-size: 1.1rem;">${formData.get('firstName')} ${formData.get('lastName')}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Email Address:</strong><br><span style="color: var(--primary);">${formData.get('email')}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Phone Number:</strong><br><span style="color: var(--primary);">${formData.get('phone')}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Date of Birth:</strong><br><span style="color: var(--primary);">${formatDate(formData.get('dateOfBirth'))} <small style="color: var(--text-light);">(Age: ${calculateAge(formData.get('dateOfBirth'))} years)</small></span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Nationality:</strong><br><span style="color: var(--primary);">${getCountryName(formData.get('nationality'))}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Passport Number:</strong><br><span style="color: var(--primary); font-family: monospace; background: var(--bg-light); padding: 4px 8px; border-radius: 4px;">${formData.get('passportNumber')}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Passport Issue Date:</strong><br><span style="color: var(--primary);">${formatDate(formData.get('passportIssueDate'))}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Passport Expiry Date:</strong><br><span style="color: ${isPassportValidSoon(formData.get('passportExpiryDate')) ? 'var(--error);' : 'var(--success);'}">${formatDate(formData.get('passportExpiryDate'))} <small style="color: var(--text-light);">(${getPassportValidityStatus(formData.get('passportExpiryDate'))})</small></span></div>`;
-            reviewHTML += '</div></div></div>';
-
-            // ===== ADDITIONAL TRAVELERS =====
-            // Skip selection panels, only review actual traveler cards
-            const travelerCards = document.querySelectorAll('.traveler-card:not([id$="_selection"])');
-            if (travelerCards.length > 0) {
-                reviewHTML += '<div style="margin-bottom: 30px;">';
-                reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">👥 Additional Travelers (' + travelerCards.length + ')</h3>';
-
-                travelerCards.forEach((card, index) => {
-                    const cardId = card.id;
-                    const typeInput = card.querySelector(`input[name="${cardId}_type"]`);
-                    const travelerType = typeInput ? typeInput.value : 'adult';
-
-                    reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--secondary);">';
-
-                    if (travelerType === 'adult') {
-                        // ===== ADULT REVIEW =====
-                        const tFirstName = card.querySelector(`[name="${cardId}_firstName"]`)?.value || 'N/A';
-                        const tLastName = card.querySelector(`[name="${cardId}_lastName"]`)?.value || 'N/A';
-                        const tDOB = card.querySelector(`[name="${cardId}_dateOfBirth"]`)?.value || 'N/A';
-                        const tNationality = card.querySelector(`[name="${cardId}_nationality"]`)?.value || 'N/A';
-                        const tEmail = card.querySelector(`[name="${cardId}_email"]`)?.value || 'N/A';
-                        const tPhone = card.querySelector(`[name="${cardId}_phone"]`)?.value || 'N/A';
-                        const tPassport = card.querySelector(`[name="${cardId}_passportNumber"]`)?.value || 'N/A';
-                        const tIssueDate = card.querySelector(`[name="${cardId}_passportIssueDate"]`)?.value || 'N/A';
-                        const tExpiryDate = card.querySelector(`[name="${cardId}_passportExpiryDate"]`)?.value || 'N/A';
-
-                        reviewHTML += '<h4 style="color: var(--primary); margin-bottom: 15px;">Traveler #' + (index + 1) + ' <span style="font-size: 0.9rem; color: var(--text-light); font-weight: 400;">👤 Adult</span></h4>';
-                        reviewHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">';
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">First Name:</strong><br><span>${tFirstName}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Last Name:</strong><br><span>${tLastName}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Date of Birth:</strong><br><span>${formatDate(tDOB)} <small style="color: var(--text-light);">(Age: ${calculateAge(tDOB)} years)</small></span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Nationality:</strong><br><span>${getCountryName(tNationality)}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Email:</strong><br><span>${tEmail}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Phone:</strong><br><span>${tPhone}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Passport Number:</strong><br><span style="font-family: monospace; background: var(--bg-light); padding: 4px 8px; border-radius: 4px;">${tPassport}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Passport Issue Date:</strong><br><span>${formatDate(tIssueDate)}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Passport Expiry Date:</strong><br><span>${formatDate(tExpiryDate)} <small style="color: var(--text-light);">(${getPassportValidityStatus(tExpiryDate)})</small></span></div>`;
-                        reviewHTML += '</div>';
-                    } else {
-                        // ===== DEPENDENT REVIEW =====
-                        const tFullName = card.querySelector(`[name="${cardId}_fullName"]`)?.value || 'N/A';
-                        const tRelationship = card.querySelector(`[name="${cardId}_relationship"]`)?.value || 'N/A';
-                        const tDOB = card.querySelector(`[name="${cardId}_dateOfBirth"]`)?.value || 'N/A';
-                        const tPassport = card.querySelector(`[name="${cardId}_passportNumber"]`)?.value || 'N/A';
-                        const guardianAgreed = card.querySelector(`[name="${cardId}_guardianAgree"]`)?.checked;
-
-                        const relationshipLabels = {
-                            'guardian': 'Guardian',
-                            'parent': 'Parent'
-                        };
-
-                        reviewHTML += '<h4 style="color: var(--primary); margin-bottom: 15px;">Traveler #' + (index + 1) + ' <span style="font-size: 0.9rem; color: var(--text-light); font-weight: 400;">👶 Dependent</span></h4>';
-                        reviewHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">';
-                        reviewHTML += `<div style="grid-column: 1 / -1;"><strong style="color: var(--text-light); font-size: 0.85rem;">Full Name:</strong><br><span>${tFullName}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Relationship:</strong><br><span style="text-transform: capitalize;">${relationshipLabels[tRelationship] || tRelationship}</span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Date of Birth:</strong><br><span>${formatDate(tDOB)} <small style="color: var(--text-light);">(Age: ${calculateAge(tDOB)} years)</small></span></div>`;
-                        reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Passport Number:</strong><br><span style="font-family: monospace; background: var(--bg-light); padding: 4px 8px; border-radius: 4px;">${tPassport}</span></div>`;
-                        reviewHTML += `<div style="grid-column: 1 / -1;"><strong style="color: var(--text-light); font-size: 0.85rem;">Guardian Agreement:</strong><br><span style="color: ${guardianAgreed ? 'var(--success)' : 'var(--error)'};">${guardianAgreed ? '✓ Guardian takes full legal responsibility' : '✗ Not agreed'}</span></div>`;
-                        reviewHTML += '</div>';
-                    }
-
-                    reviewHTML += '</div>';
-                });
-
-                reviewHTML += '</div>';
             } else {
-                reviewHTML += '<div style="margin-bottom: 30px; background: white; padding: 20px; border-radius: 8px; border-left: 4px solid var(--text-light);">';
-                reviewHTML += '<h3 style="color: var(--text-light); margin-bottom: 5px;">👥 Additional Travelers</h3>';
-                reviewHTML += '<p style="color: var(--text-light);">No additional travelers added - Primary applicant only</p>';
-                reviewHTML += '</div>';
+                clearFieldError(fieldId);
             }
-
-            // ===== TRAVEL INFORMATION =====
-            reviewHTML += '<div style="margin-bottom: 30px;">';
-            reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">✈️ Travel Information</h3>';
-            reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px;">';
-            reviewHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Arrival Date:</strong><br><span style="color: var(--primary); font-size: 1.1rem;">${formatDate(formData.get('arrivalDate'))}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Departure Date:</strong><br><span style="color: var(--primary); font-size: 1.1rem;">${formatDate(formData.get('departureDate'))}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Length of Stay:</strong><br><span style="color: var(--primary);">${getStayDuration(formData.get('arrivalDate'), formData.get('departureDate'))}</span></div>`;
-            if (formData.get('flightNumber')) reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Flight Number:</strong><br><span style="font-family: monospace; background: var(--bg-light); padding: 4px 8px; border-radius: 4px;">${formData.get('flightNumber')}</span></div>`;
-            if (formData.get('airline')) reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Airline:</strong><br><span>${formData.get('airline')}</span></div>`;
-            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Purpose of Visit:</strong><br><span style="text-transform: capitalize; color: var(--primary);">${formData.get('purpose') || 'Not specified'}</span></div>`;
-            reviewHTML += '</div>';
+        }
+        
+        const email = document.getElementById('email').value;
+        if (email && !PaymentHandler.isValidEmail(email)) {
+            isValid = false;
+            showFieldError('email', 'Please enter a valid email address');
+            if (!firstErrorField) firstErrorField = 'email';
+        }
+        
+        const phone = document.getElementById('phone').value;
+        if (phone && !PaymentHandler.isValidPhone(phone)) {
+            isValid = false;
+            showFieldError('phone', 'Please enter a valid phone number');
+            if (!firstErrorField) firstErrorField = 'phone';
+        }
+        
+        const passport = document.getElementById('passportNumber').value;
+        if (passport && !PaymentHandler.isValidPassport(passport)) {
+            isValid = false;
+            showFieldError('passportNumber', 'Please enter a valid passport number');
+            if (!firstErrorField) firstErrorField = 'passportNumber';
+        }
+        
+        const issueDate = document.getElementById('passportIssueDate').value;
+        const expiryDate = document.getElementById('passportExpiryDate').value;
+        if (issueDate && expiryDate && new Date(expiryDate) <= new Date(issueDate)) {
+            isValid = false;
+            showFieldError('passportExpiryDate', 'Passport expiry date must be after the issue date');
+            if (!firstErrorField) firstErrorField = 'passportExpiryDate';
+        }
+        
+        if (!isValid && firstErrorField) {
+            document.getElementById(firstErrorField).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+    }
+    
+    if (currentStep === 3) {
+        const travelerCards = document.querySelectorAll('.traveler-card:not([id$="_selection"])');
+        const primaryPassport = document.getElementById('passportNumber')?.value?.trim().toUpperCase() || '';
+        const allPassports = primaryPassport ? [primaryPassport] : [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        for (let card of travelerCards) {
+            const cardId = card.id;
+            const typeInput = card.querySelector(`input[name="${cardId}_type"]`);
+            const travelerType = typeInput ? typeInput.value : 'adult';
             
-            if (formData.get('accommodation')) {
-                reviewHTML += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">';
-                reviewHTML += `<strong style="color: var(--text-light); font-size: 0.9rem;">Accommodation Address:</strong><br><span style="color: var(--primary);">${formData.get('accommodation')}</span>`;
-                reviewHTML += '</div>';
-            }
-            if (formData.get('specialRequests')) {
-                reviewHTML += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">';
-                reviewHTML += `<strong style="color: var(--text-light); font-size: 0.9rem;">Special Requests:</strong><br><span style="color: var(--primary); font-style: italic;">${formData.get('specialRequests')}</span>`;
-                reviewHTML += '</div>';
-            }
-            reviewHTML += '</div></div>';
-
-            // ===== UPLOADED DOCUMENTS =====
-            reviewHTML += '<div style="margin-bottom: 30px;">';
-            reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">📎 Uploaded Documents</h3>';
-            reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px;">';
-            reviewHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
-            
-            const passportFile = document.getElementById('passportUpload').files[0];
-            const photoFile = document.getElementById('photoUpload').files[0];
-            const itineraryFile = document.getElementById('itineraryUpload').files[0];
-            const accommodationFile = document.getElementById('accommodationUpload').files[0];
-            
-            if (passportFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Valid Passport</strong><br><small style="color: var(--text-light);">${passportFile.name} (${(passportFile.size/1024).toFixed(1)} KB)</small></div>`;
-            if (photoFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Passport Photo</strong><br><small style="color: var(--text-light);">${photoFile.name} (${(photoFile.size/1024).toFixed(1)} KB)</small></div>`;
-            if (itineraryFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Travel Itinerary</strong><br><small style="color: var(--text-light);">${itineraryFile.name} (${(itineraryFile.size/1024).toFixed(1)} KB)</small></div>`;
-            if (accommodationFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Accommodation Booking</strong><br><small style="color: var(--text-light);">${accommodationFile.name} (${(accommodationFile.size/1024).toFixed(1)} KB)</small></div>`;
-            
-            reviewHTML += '</div></div></div>';
-
-            // ===== TERMS AGREEMENT =====
-            const termsAgreed = document.getElementById('termsAgree').checked;
-            reviewHTML += '<div style="background: ' + (termsAgreed ? 'rgba(45, 125, 79, 0.1)' : 'rgba(199, 67, 61, 0.1)') + '; padding: 15px; border-radius: 8px; border-left: 4px solid ' + (termsAgreed ? 'var(--success)' : 'var(--error)') + ';">';
-            reviewHTML += '<p style="margin: 0; color: ' + (termsAgreed ? 'var(--success)' : 'var(--error)') + ';">';
-            reviewHTML += (termsAgreed ? '✓' : '⚠') + ' <strong>Terms & Conditions:</strong> ' + (termsAgreed ? 'Agreed' : 'NOT Agreed');
-            reviewHTML += '</p></div>';
-
-            reviewHTML += '</div>';
-            
-            document.getElementById('reviewContent').innerHTML = reviewHTML;
-        }
-
-        // Helper function: Format date from YYYY-MM-DD to readable format
-        function formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            return date.toLocaleDateString('en-KE', options);
-        }
-
-        // Helper function: Calculate age from date string
-        function calculateAge(dateString) {
-            if (!dateString) return 'N/A';
-            const birthDate = new Date(dateString);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            return age;
-        }
-
-        // Helper function: Get country name from code
-        function getCountryName(code) {
-            if (!code) return 'N/A';
-            const countryNames = {
-                'KE': 'Kenyan', 'US': 'American', 'GB': 'British', 'CA': 'Canadian',
-                'AU': 'Australian', 'DE': 'German', 'FR': 'French', 'JP': 'Japanese',
-                'CN': 'Chinese', 'IN': 'Indian', 'ZA': 'South African', 'NG': 'Nigerian',
-                'GH': 'Ghanaian', 'TZ': 'Tanzanian', 'UG': 'Ugandan', 'RW': 'Rwandan'
-            };
-            return countryNames[code] || code + ' National';
-        }
-
-        // Helper function: Check if passport expires soon (within 6 months)
-        function isPassportValidSoon(dateString) {
-            if (!dateString) return false;
-            const expiryDate = new Date(dateString);
-            const sixMonthsFromNow = new Date();
-            sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-            return expiryDate < sixMonthsFromNow;
-        }
-
-        // Helper function: Get passport validity status
-        function getPassportValidityStatus(dateString) {
-            if (!dateString) return 'Unknown';
-            const expiryDate = new Date(dateString);
-            const today = new Date();
-            const monthsUntilExpiry = (expiryDate.getFullYear() - today.getFullYear()) * 12 + (expiryDate.getMonth() - today.getMonth());
-            
-            if (monthsUntilExpiry < 0) return 'Expired';
-            if (monthsUntilExpiry < 6) return 'Expires soon!';
-            if (monthsUntilExpiry < 12) return 'Valid (< 1 year)';
-            return 'Valid';
-        }
-
-        // Helper function: Calculate stay duration
-        function getStayDuration(arrivalStr, departureStr) {
-            if (!arrivalStr || !departureStr) return 'N/A';
-            const arrival = new Date(arrivalStr);
-            const departure = new Date(departureStr);
-            const diffTime = Math.abs(departure - arrival);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 1) return '1 day';
-            if (diffDays < 7) return diffDays + ' days';
-            const weeks = Math.floor(diffDays / 7);
-            const remainingDays = diffDays % 7;
-            return weeks + ' week' + (weeks > 1 ? 's' : '') + (remainingDays > 0 ? ' ' + remainingDays + ' day' + (remainingDays > 1 ? 's' : '') : '');
-        }
-
-        // Show traveler type selection before rendering the actual form
-        function addTraveler() {
-            travelerCount++;
-            const travelerId = `traveler_${travelerCount}`;
-
-            // Insert a type-selection panel into the traveler card slot
-            const selectionHTML = `
-                <div class="traveler-card" id="${travelerId}_selection">
-                    <div class="traveler-header">
-                        <h3>
-                            <span class="traveler-number">${travelerCount}</span>
-                            Traveler ${travelerCount} — Select Type
-                        </h3>
-                        <button type="button" class="remove-traveler" onclick="removeTraveler('${travelerId}_selection')">
-                            Cancel
-                        </button>
-                    </div>
-                    <div style="padding: 10px 0;">
-                        <p style="color: var(--text-light); margin-bottom: 20px; font-size: 0.95rem;">
-                            What type of traveler is this?
-                        </p>
-                        <div class="radio-group" style="flex-direction: row; gap: 15px;">
-                            <label class="radio-option" style="flex: 1; padding: 20px;">
-                                <input type="radio" name="${travelerId}_typeSelect" value="adult" onchange="selectTravelerType('${travelerId}', 'adult')" style="margin-right: 10px; width: 18px; height: 18px; accent-color: var(--primary);">
-                                <span style="font-weight: 600; font-size: 1.05rem;">👤 Adult (18+)</span>
-                                
-                            </label>
-                            <label class="radio-option" style="flex: 1; padding: 20px;">
-                                <input type="radio" name="${travelerId}_typeSelect" value="dependent" onchange="selectTravelerType('${travelerId}', 'dependent')" style="margin-right: 10px; width: 18px; height: 18px; accent-color: var(--primary);">
-                                <span style="font-weight: 600; font-size: 1.05rem;">👶 Dependent</span>
-                                <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 6px; margin-bottom: 0;">guardian consent</p>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('travelersContainer').insertAdjacentHTML('beforeend', selectionHTML);
-        }
-
-        // Called when user picks Adult or Dependent — replaces the selection panel with the actual form
-        // Guard against double-firing from label/input click propagation
-        const _selectingTraveler = {};
-        function selectTravelerType(travelerId, type) {
-            // Guard: prevent double execution
-            if (_selectingTraveler[travelerId]) return;
-            _selectingTraveler[travelerId] = true;
-
-            const selectionCard = document.getElementById(`${travelerId}_selection`);
-            if (!selectionCard) return;
-
-            const travelerIdClean = travelerId; // e.g. traveler_1
-
-            if (type === 'adult') {
-                // ADULT TRAVELER FORM — collects data similar to primary applicant
-                const adultHTML = `
-                <div class="traveler-card" id="${travelerIdClean}">
-                    <div class="traveler-header">
-                        <h3>
-                            <span class="traveler-number">${travelerCount}</span>
-                            Traveler ${travelerCount} — 👤 Adult
-                        </h3>
-                        <button type="button" class="remove-traveler" onclick="removeTraveler('${travelerIdClean}')">
-                            Remove
-                        </button>
-                    </div>
-                    <!-- Hidden type field for data collection -->
-                    <input type="hidden" name="${travelerIdClean}_type" value="adult">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>First Name <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_firstName" name="${travelerIdClean}_firstName" required placeholder="Enter first name">
-                            <span class="error-message" id="${travelerIdClean}_firstName-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Last Name <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_lastName" name="${travelerIdClean}_lastName" required placeholder="Enter last name">
-                            <span class="error-message" id="${travelerIdClean}_lastName-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Date of Birth <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_dateOfBirth" name="${travelerIdClean}_dateOfBirth" placeholder="Date of birth" required>
-                            <span class="format-hint">Format: mm/dd/yyyy • Must be 18 or older</span>
-                            <span class="error-message" id="${travelerIdClean}_dateOfBirth-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Nationality <span class="required">*</span></label>
-                            <select id="${travelerIdClean}_nationality" name="${travelerIdClean}_nationality" required>
-                                <option value="">Select nationality</option>
-                                ${document.getElementById('nationality').innerHTML}
-                            </select>
-                            <span class="error-message" id="${travelerIdClean}_nationality-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Email Address <span class="required">*</span></label>
-                            <input type="email" id="${travelerIdClean}_email" name="${travelerIdClean}_email" required placeholder="traveler@example.com">
-                            <span class="error-message" id="${travelerIdClean}_email-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Phone Number <span class="required">*</span></label>
-                            <input type="tel" id="${travelerIdClean}_phone" name="${travelerIdClean}_phone" required placeholder="+254 7XX XXX XXX">
-                            <span class="error-message" id="${travelerIdClean}_phone-error"></span>
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Passport Number <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_passportNumber" name="${travelerIdClean}_passportNumber" required placeholder="A12345678">
-                            <span class="format-hint">6-12 alphanumeric characters</span>
-                            <span class="error-message" id="${travelerIdClean}_passportNumber-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Passport Issue Date <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_passportIssueDate" name="${travelerIdClean}_passportIssueDate" placeholder="Issue date" required>
-                            <span class="format-hint">Format: mm/dd/yyyy</span>
-                            <span class="error-message" id="${travelerIdClean}_passportIssueDate-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Passport Expiry Date <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_passportExpiryDate" name="${travelerIdClean}_passportExpiryDate" placeholder="Expiry date" required>
-                            <span class="format-hint">Format: mm/dd/yyyy • 6+ months validity</span>
-                            <span class="error-message" id="${travelerIdClean}_passportExpiryDate-error"></span>
-                        </div>
-                    </div>
-                </div>
-                `;
-
-                selectionCard.insertAdjacentHTML('afterend', adultHTML);
-                selectionCard.style.animation = 'fadeOut 0.2s ease-out';
-                setTimeout(() => selectionCard.remove(), 200);
-                travelers.push(travelerIdClean);
-
-                // Initialize date pickers
-                const today = new Date();
-                datePickers[`${travelerIdClean}_dateOfBirth`] = flatpickr(`#${travelerIdClean}_dateOfBirth`, {
-                    dateFormat: "m/d/Y",
-                    maxDate: new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()),
-                    placeholder: "Date of birth"
-                });
-                datePickers[`${travelerIdClean}_passportIssueDate`] = flatpickr(`#${travelerIdClean}_passportIssueDate`, {
-                    dateFormat: "m/d/Y",
-                    maxDate: "today",
-                    placeholder: "Issue date"
-                });
-                datePickers[`${travelerIdClean}_passportExpiryDate`] = flatpickr(`#${travelerIdClean}_passportExpiryDate`, {
-                    dateFormat: "m/d/Y",
-                    minDate: new Date(today.getFullYear(), today.getMonth() + 6, today.getDate()),
-                    placeholder: "Expiry date"
-                });
+            if (travelerType === 'adult') {
+                const fields = [
+                    { id: `${cardId}_firstName`, label: 'First name' },
+                    { id: `${cardId}_lastName`, label: 'Last name' },
+                    { id: `${cardId}_dateOfBirth`, label: 'Date of birth' },
+                    { id: `${cardId}_nationality`, label: 'Nationality' },
+                    { id: `${cardId}_email`, label: 'Email' },
+                    { id: `${cardId}_phone`, label: 'Phone' },
+                    { id: `${cardId}_passportNumber`, label: 'Passport number' },
+                    { id: `${cardId}_passportIssueDate`, label: 'Passport issue date' },
+                    { id: `${cardId}_passportExpiryDate`, label: 'Passport expiry date' }
+                ];
+                
+                for (const field of fields) {
+                    const input = document.getElementById(field.id);
+                    if (!input || !input.value.trim()) {
+                        isValid = false;
+                        if (input) showFieldError(field.id, `${field.label} is required`);
+                        if (!firstErrorField) firstErrorField = field.id;
+                    }
+                }
+                
+                const dobInput = document.getElementById(`${cardId}_dateOfBirth`);
+                if (dobInput && dobInput.value) {
+                    const dob = new Date(dobInput.value);
+                    dob.setHours(0, 0, 0, 0);
+                    const age = today.getFullYear() - dob.getFullYear();
+                    const m = today.getMonth() - dob.getMonth();
+                    const finalAge = (m < 0 || (m === 0 && today.getDate() < dob.getDate())) ? age - 1 : age;
+                    if (finalAge < 18) {
+                        isValid = false;
+                        showFieldError(`${cardId}_dateOfBirth`, 'Adult travelers must be at least 18 years old.');
+                        if (!firstErrorField) firstErrorField = `${cardId}_dateOfBirth`;
+                    }
+                }
+                
+                const emailInput = document.getElementById(`${cardId}_email`);
+                if (emailInput && emailInput.value && !PaymentHandler.isValidEmail(emailInput.value)) {
+                    isValid = false;
+                    showFieldError(`${cardId}_email`, 'Please enter a valid email address');
+                    if (!firstErrorField) firstErrorField = `${cardId}_email`;
+                }
+                
+                const phoneInput = document.getElementById(`${cardId}_phone`);
+                if (phoneInput && phoneInput.value && !PaymentHandler.isValidPhone(phoneInput.value)) {
+                    isValid = false;
+                    showFieldError(`${cardId}_phone`, 'Please enter a valid phone number');
+                    if (!firstErrorField) firstErrorField = `${cardId}_phone`;
+                }
+                
+                const passportInput = document.getElementById(`${cardId}_passportNumber`);
+                if (passportInput && passportInput.value) {
+                    const currentPassport = passportInput.value.trim().toUpperCase();
+                    if (!PaymentHandler.isValidPassport(currentPassport)) {
+                        isValid = false;
+                        showFieldError(`${cardId}_passportNumber`, 'Please enter a valid passport number');
+                        if (!firstErrorField) firstErrorField = `${cardId}_passportNumber`;
+                    } else if (allPassports.includes(currentPassport)) {
+                        isValid = false;
+                        showFieldError(`${cardId}_passportNumber`, 'This passport number is already used');
+                        if (!firstErrorField) firstErrorField = `${cardId}_passportNumber`;
+                    } else {
+                        allPassports.push(currentPassport);
+                    }
+                }
             } else {
-                // DEPENDENT TRAVELER FORM — streamlined with relationship and guardian consent
-                const dependentHTML = `
-                <div class="traveler-card" id="${travelerIdClean}">
-                    <div class="traveler-header">
-                        <h3>
-                            <span class="traveler-number">${travelerCount}</span>
-                            Traveler ${travelerCount} — 👶 Dependent
-                        </h3>
-                        <button type="button" class="remove-traveler" onclick="removeTraveler('${travelerIdClean}')">
-                            Remove
-                        </button>
-                    </div>
-                    <!-- Hidden type field for data collection -->
-                    <input type="hidden" name="${travelerIdClean}_type" value="dependent">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Full Name <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_fullName" name="${travelerIdClean}_fullName" required placeholder="Enter dependent's full name">
-                            <span class="error-message" id="${travelerIdClean}_fullName-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Relationship to Primary Traveler <span class="required">*</span></label>
-                            <select id="${travelerIdClean}_relationship" name="${travelerIdClean}_relationship" required>
-                                <option value="">Select relationship</option>
-                                <option value="guardian">Guardian</option>
-                                <option value="parent">Parent</option>
-                            </select>
-                            <span class="error-message" id="${travelerIdClean}_relationship-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Date of Birth <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_dateOfBirth" name="${travelerIdClean}_dateOfBirth" placeholder="Date of birth" required>
-                            <span class="format-hint">Format: mm/dd/yyyy • Must not be in the future</span>
-                            <span class="error-message" id="${travelerIdClean}_dateOfBirth-error"></span>
-                        </div>
-                        <div class="form-group">
-                            <label>Passport Number <span class="required">*</span></label>
-                            <input type="text" id="${travelerIdClean}_passportNumber" name="${travelerIdClean}_passportNumber" required placeholder="A12345678">
-                            <span class="format-hint">6-12 alphanumeric characters</span>
-                            <span class="error-message" id="${travelerIdClean}_passportNumber-error"></span>
-                        </div>
-                        <div class="form-group full-width">
-                            <label class="checkbox-option" style="background: rgba(10, 61, 98, 0.05); border-color: var(--primary); padding: 18px;">
-                                <input type="checkbox" id="${travelerIdClean}_guardianAgree" name="${travelerIdClean}_guardianAgree" required>
-                                <span style="font-size: 0.95rem;">I confirm that I am the legal guardian/parent of this dependent and take full responsibility for their application, travel arrangements, and wellbeing during the trip under the legal framework.</span>
-                            </label>
-                            <span class="error-message" id="${travelerIdClean}_guardianAgree-error"></span>
-                        </div>
-                    </div>
-                </div>
-                `;
-
-                selectionCard.insertAdjacentHTML('afterend', dependentHTML);
-                selectionCard.style.animation = 'fadeOut 0.2s ease-out';
-                setTimeout(() => selectionCard.remove(), 200);
-                travelers.push(travelerIdClean);
-
-                // Initialize date picker — no 18yo restriction, just not in the future
-                datePickers[`${travelerIdClean}_dateOfBirth`] = flatpickr(`#${travelerIdClean}_dateOfBirth`, {
-                    dateFormat: "m/d/Y",
-                    maxDate: "today",
-                    placeholder: "Date of birth"
-                });
-            }
-        }
-
-        // Toggle field visibility and required attributes based on traveler type
-        // REMOVED — replaced by separate Adult and Dependent forms
-
-        // Remove traveler function — handles selection, adult, and dependent cards
-        function removeTraveler(travelerId) {
-            const card = document.getElementById(travelerId);
-            if (!card) return;
-
-            card.style.animation = 'fadeOut 0.3s ease-out';
-            setTimeout(() => {
-                // Destroy flatpickr instances if they exist (only on adult/dependent forms)
-                const dobKey = `${travelerId}_dateOfBirth`;
-                const issueKey = `${travelerId}_passportIssueDate`;
-                const expiryKey = `${travelerId}_passportExpiryDate`;
-
-                if (datePickers[dobKey]) {
-                    datePickers[dobKey].destroy();
-                    delete datePickers[dobKey];
+                const fields = [
+                    { id: `${cardId}_fullName`, label: 'Full name' },
+                    { id: `${cardId}_relationship`, label: 'Relationship' },
+                    { id: `${cardId}_dateOfBirth`, label: 'Date of birth' },
+                    { id: `${cardId}_passportNumber`, label: 'Passport number' }
+                ];
+                
+                for (const field of fields) {
+                    const input = document.getElementById(field.id);
+                    if (!input || !input.value.trim()) {
+                        isValid = false;
+                        if (input) showFieldError(field.id, `${field.label} is required`);
+                        if (!firstErrorField) firstErrorField = field.id;
+                    }
                 }
-                if (datePickers[issueKey]) {
-                    datePickers[issueKey].destroy();
-                    delete datePickers[issueKey];
+                
+                const guardianAgree = document.getElementById(`${cardId}_guardianAgree`);
+                if (guardianAgree && !guardianAgree.checked) {
+                    isValid = false;
+                    showFieldError(`${cardId}_guardianAgree`, 'Guardian agreement is required');
+                    if (!firstErrorField) firstErrorField = `${cardId}_guardianAgree`;
                 }
-                if (datePickers[expiryKey]) {
-                    datePickers[expiryKey].destroy();
-                    delete datePickers[expiryKey];
+            }
+        }
+        
+        if (!isValid && firstErrorField) {
+            document.getElementById(firstErrorField).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+    }
+    
+    if (currentStep === 4) {
+        const inputs = currentFormStep.querySelectorAll('input[required], select[required], textarea[required]');
+        for (let input of inputs) {
+            const fieldId = input.id;
+            if (!input.value && input.type !== 'radio' && input.type !== 'checkbox') {
+                isValid = false;
+                showFieldError(fieldId, 'This field is required');
+                if (!firstErrorField) firstErrorField = fieldId;
+            } else if (input.type === 'text' && input.id.includes('Date')) {
+                const dateError = validateDateField(input);
+                if (dateError) {
+                    isValid = false;
+                    showFieldError(fieldId, dateError);
+                    if (!firstErrorField) firstErrorField = fieldId;
+                } else {
+                    clearFieldError(fieldId);
                 }
-
-                card.remove();
-                travelers = travelers.filter(id => id !== travelerId);
-                renumberTravelers();
-            }, 300);
+            } else {
+                clearFieldError(fieldId);
+            }
         }
-
-        // Renumber travelers after removal
-        function renumberTravelers() {
-            const travelerCards = document.querySelectorAll('.traveler-card');
-            travelerCards.forEach((card, index) => {
-                const number = index + 1;
-                card.querySelector('.traveler-number').textContent = number;
-                card.querySelector('.traveler-header h3').innerHTML = `
-                    <span class="traveler-number">${number}</span>
-                    Traveler ${number}
-                `;
-            });
+        
+        const arrivalDate = document.getElementById('arrivalDate').value;
+        const departureDate = document.getElementById('departureDate').value;
+        if (arrivalDate && departureDate) {
+            const arrival = new Date(arrivalDate);
+            const departure = new Date(departureDate);
+            if (departure <= arrival) {
+                isValid = false;
+                showFieldError('departureDate', 'Departure date must be after arrival date');
+                if (!firstErrorField) firstErrorField = 'departureDate';
+            }
         }
-
-        // Calculate total amount
-        function calculateTotal() {
-            const form = document.getElementById('applicationForm');
-            const formData = new FormData(form);
-            let total = 0;
-
-            // Base services
-            if (formData.get('service_eta')) total += pricing.eta;
-            if (formData.get('service_tour')) total += pricing.stopover_tour;
-            if (formData.get('service_meetgreet')) total += pricing.meet_greet;
-
-            // Additional travelers — priced dynamically based on primary user's service
-            const additionalTravelers = document.querySelectorAll('.traveler-card:not([id$="_selection"])').length;
-            if (additionalTravelers > 0) {
-                total += (additionalTravelers * getTravelerPrice(formData));
-            }
-
-            return total;
+        
+        const accommodation = document.getElementById('accommodation').value.trim();
+        if (!accommodation) {
+            isValid = false;
+            showFieldError('accommodation', 'Please provide your accommodation address');
+            if (!firstErrorField) firstErrorField = 'accommodation';
         }
-
-        // Populate payment summary - UPDATED for KES
-        function populatePaymentSummary() {
-            const form = document.getElementById('applicationForm');
-            const formData = new FormData(form);
-            let summaryHTML = '';
-            
-            // Services breakdown
-            if (formData.get('service_eta')) {
-                summaryHTML += `
-                    <div class="payment-line-item">
-                        <span class="payment-label">eTA Visa Application</span>
-                        <span class="payment-value">KES ${pricing.eta.toFixed(2)}</span>
-                    </div>
-                `;
-            }
-            
-            if (formData.get('service_tour')) {
-                summaryHTML += `
-                    <div class="payment-line-item">
-                        <span class="payment-label">Stopover Tours</span>
-                        <span class="payment-value">KES ${pricing.stopover_tour.toFixed(2)}</span>
-                    </div>
-                `;
-            }
-            
-            if (formData.get('service_meetgreet')) {
-                summaryHTML += `
-                    <div class="payment-line-item">
-                        <span class="payment-label">Airport Meet & Greet</span>
-                        <span class="payment-value">KES ${pricing.meet_greet.toFixed(2)}</span>
-                    </div>
-                `;
-            }
-            
-            // Additional travelers — priced dynamically based on primary user's service
-            const additionalTravelers = document.querySelectorAll('.traveler-card:not([id$="_selection"])').length;
-            if (additionalTravelers > 0) {
-                const travelerPrice = getTravelerPrice(formData);
-                summaryHTML += `
-                    <div class="payment-line-item">
-                        <span class="payment-label">Additional Travelers (${additionalTravelers} × KES ${travelerPrice.toFixed(2)})</span>
-                        <span class="payment-value">KES ${(additionalTravelers * travelerPrice).toFixed(2)}</span>
-                    </div>
-                `;
-            }
-            
-            document.getElementById('paymentSummary').innerHTML = summaryHTML;
-            
-            // Update total
-            const total = calculateTotal();
-            document.getElementById('totalAmount').textContent = `KES ${total.toFixed(2)}`;
+        
+        const purposeSelected = document.querySelector('input[name="purpose"]:checked');
+        if (!purposeSelected) {
+            isValid = false;
+            showFieldError('purpose', 'Please select your purpose of visit');
+            if (!firstErrorField) firstErrorField = 'purpose';
         }
+        
+        if (!isValid && firstErrorField) {
+            document.getElementById(firstErrorField).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+    }
+    
+    if (currentStep === 5) {
+        if (!document.getElementById('termsAgree').checked) {
+            showFieldError('termsAgree', 'You must agree to the terms and conditions');
+            return;
+        }
+        
+        const passportFile = document.getElementById('passportUpload').files[0];
+        const photoFile = document.getElementById('photoUpload').files[0];
+        const itineraryFile = document.getElementById('itineraryUpload').files[0];
+        const accommodationFile = document.getElementById('accommodationUpload').files[0];
+        
+        if (!passportFile) { showFieldError('passportUpload', 'Please upload your passport'); return; }
+        if (!photoFile) { showFieldError('photoUpload', 'Please upload your passport photo'); return; }
+        if (!itineraryFile) { showFieldError('itineraryUpload', 'Please upload your travel itinerary'); return; }
+        if (!accommodationFile) { showFieldError('accommodationUpload', 'Please upload your accommodation booking'); return; }
+        
+        const maxFileSize = 5 * 1024 * 1024;
+        const files = [passportFile, photoFile, itineraryFile, accommodationFile];
+        for (let file of files) {
+            if (file.size > maxFileSize) {
+                alert(`File "${file.name}" exceeds 5MB limit. Please compress and re-upload.`);
+                return;
+            }
+        }
+        
+        populateReview();
+    }
+    
+    if (currentStep === 5) {
+        populatePaymentSummary();
+    }
+    
+    if (currentStep < totalSteps) {
+        currentFormStep.classList.remove('active');
+        currentStep++;
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+        updateProgress();
+        
+        setTimeout(() => {
+            const formContainer = document.querySelector('.form-container');
+            if (formContainer) {
+                formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 50);
+    }
+}
 
-		
-		// Initiate payment
+function prevStep() {
+    if (currentStep > 1) {
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+        currentStep--;
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+        updateProgress();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// Validation helpers
+function isValidEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+function isValidPhone(phone) {
+    const re = /^\+?[1-9]\d{1,14}$/;
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    return re.test(cleaned);
+}
+
+function isValidPassport(passport) {
+    const re = /^[A-Za-z0-9]{6,12}$/;
+    return re.test(passport);
+}
+
+function validateDateField(input) {
+    const value = input.value;
+    if (!value) return null;
+    
+    const selectedDate = new Date(value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const fieldId = input.id;
+    
+    if (fieldId === 'dateOfBirth' || fieldId.includes('_dateOfBirth')) {
+        const eighteenYearsAgo = new Date();
+        eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
+        if (selectedDate > eighteenYearsAgo) {
+            return 'You must be at least 18 years old to apply';
+        }
+    }
+    
+    if (fieldId === 'passportIssueDate' || fieldId.includes('_passportIssueDate')) {
+        if (selectedDate > today) {
+            return 'Passport issue date cannot be in the future';
+        }
+    }
+    
+    if (fieldId === 'passportExpiryDate' || fieldId.includes('_passportExpiryDate')) {
+        const sixMonthsFromNow = new Date();
+        sixMonthsFromNow.setMonth(today.getMonth() + 6);
+        if (selectedDate < sixMonthsFromNow) {
+            return 'Passport must be valid for at least 6 months';
+        }
+    }
+    
+    if (fieldId === 'arrivalDate') {
+        if (selectedDate < today) {
+            return 'Arrival date cannot be in the past';
+        }
+    }
+    
+    if (fieldId === 'departureDate') {
+        if (selectedDate < today) {
+            return 'Departure date cannot be in the past';
+        }
+    }
+    
+    return null;
+}
+
+// Populate review
+function populateReview() {
+    const form = document.getElementById('applicationForm');
+    const formData = new FormData(form);
+    
+    let reviewHTML = '<div style="background: var(--bg-light); padding: 30px; border-radius: 12px;">';
+    
+    // Services
+    reviewHTML += '<div style="margin-bottom: 30px;">';
+    reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">🎫 Selected Services</h3>';
+    const services = [];
+    if (formData.get('service_eta')) services.push('<span style="color: var(--success);">✓</span> eTA Visa Application (KES ' + pricing.eta.toFixed(2) + ')');
+    if (formData.get('service_tour')) services.push('<span style="color: var(--success);">✓</span> One Day eTA (From KES ' + pricing.stopover_tour.toFixed(2) + ')');
+    if (formData.get('service_meetgreet')) services.push('<span style="color: var(--success);">✓</span> Premium Same-Day eTA (KES ' + pricing.meet_greet.toFixed(2) + ')');
+    reviewHTML += '<div style="background: white; padding: 15px; border-radius: 8px;">' +
+        (services.length > 0 ? services.join('<br>') : '<span style="color: var(--error);">✗ No services selected</span>') +
+        '</div></div>';
+    
+    // Primary applicant
+    reviewHTML += '<div style="margin-bottom: 30px;">';
+    reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">👤 Primary Applicant</h3>';
+    reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px;">';
+    reviewHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
+    reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Full Name:</strong><br><span style="color: var(--primary); font-size: 1.1rem;">${formData.get('firstName')} ${formData.get('lastName')}</span></div>`;
+    reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Email:</strong><br><span style="color: var(--primary);">${formData.get('email')}</span></div>`;
+    reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Phone:</strong><br><span style="color: var(--primary);">${formData.get('phone')}</span></div>`;
+    reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.9rem;">Passport:</strong><br><span style="color: var(--primary); font-family: monospace;">${formData.get('passportNumber')}</span></div>`;
+    reviewHTML += '</div></div></div>';
+    
+    // Travelers
+    const travelerCards = document.querySelectorAll('.traveler-card:not([id$="_selection"])');
+    if (travelerCards.length > 0) {
+        reviewHTML += '<div style="margin-bottom: 30px;">';
+        reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">👥 Additional Travelers (' + travelerCards.length + ')</h3>';
+        travelerCards.forEach((card, index) => {
+            const cardId = card.id;
+            const typeInput = card.querySelector(`input[name="${cardId}_type"]`);
+            const travelerType = typeInput ? typeInput.value : 'adult';
+            const tFirstName = card.querySelector(`[name="${cardId}_firstName"]`)?.value || 'N/A';
+            const tLastName = card.querySelector(`[name="${cardId}_lastName"]`)?.value || 'N/A';
+            const tPassport = card.querySelector(`[name="${cardId}_passportNumber"]`)?.value || 'N/A';
+            
+            reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--secondary);">';
+            reviewHTML += `<h4 style="color: var(--primary); margin-bottom: 15px;">Traveler #${index + 1} <span style="font-size: 0.9rem; color: var(--text-light); font-weight: 400;">${travelerType === 'adult' ? '👤 Adult' : '👶 Dependent'}</span></h4>`;
+            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Name:</strong> ${tFirstName} ${tLastName}</div>`;
+            reviewHTML += `<div><strong style="color: var(--text-light); font-size: 0.85rem;">Passport:</strong> <span style="font-family: monospace;">${tPassport}</span></div>`;
+            reviewHTML += '</div>';
+        });
+        reviewHTML += '</div>';
+    }
+    
+    // Travel info
+    reviewHTML += '<div style="margin-bottom: 30px;">';
+    reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">✈️ Travel Information</h3>';
+    reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px;">';
+    reviewHTML += `<div><strong style="color: var(--text-light);">Arrival:</strong> ${formatDate(formData.get('arrivalDate'))}</div>`;
+    reviewHTML += `<div><strong style="color: var(--text-light);">Departure:</strong> ${formatDate(formData.get('departureDate'))}</div>`;
+    reviewHTML += `<div><strong style="color: var(--text-light);">Purpose:</strong> ${formData.get('purpose') || 'Not specified'}</div>`;
+    reviewHTML += '</div></div>';
+    
+    // Documents
+    reviewHTML += '<div style="margin-bottom: 30px;">';
+    reviewHTML += '<h3 style="color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">📄 Uploaded Documents</h3>';
+    reviewHTML += '<div style="background: white; padding: 20px; border-radius: 8px;">';
+    const passportFile = document.getElementById('passportUpload').files[0];
+    const photoFile = document.getElementById('photoUpload').files[0];
+    const itineraryFile = document.getElementById('itineraryUpload').files[0];
+    const accommodationFile = document.getElementById('accommodationUpload').files[0];
+    if (passportFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Passport</strong><br><small style="color: var(--text-light);">${passportFile.name}</small></div>`;
+    if (photoFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Photo</strong><br><small style="color: var(--text-light);">${photoFile.name}</small></div>`;
+    if (itineraryFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Itinerary</strong><br><small style="color: var(--text-light);">${itineraryFile.name}</small></div>`;
+    if (accommodationFile) reviewHTML += `<div><span style="color: var(--success);">✓</span> <strong>Accommodation</strong><br><small style="color: var(--text-light);">${accommodationFile.name}</small></div>`;
+    reviewHTML += '</div></div>';
+    
+    // Terms
+    const termsAgreed = document.getElementById('termsAgree').checked;
+    reviewHTML += '<div style="background: ' + (termsAgreed ? 'rgba(45, 125, 79, 0.1)' : 'rgba(199, 67, 61, 0.1)') + '; padding: 15px; border-radius: 8px; border-left: 4px solid ' + (termsAgreed ? 'var(--success)' : 'var(--error)') + ';">';
+    reviewHTML += '<p style="margin: 0; color: ' + (termsAgreed ? 'var(--success)' : 'var(--error)') + ';">';
+    reviewHTML += (termsAgreed ? '✓' : '✗') + ' <strong>Terms & Conditions:</strong> ' + (termsAgreed ? 'Agreed' : 'NOT Agreed');
+    reviewHTML += '</p></div></div>';
+    
+    document.getElementById('reviewContent').innerHTML = reviewHTML;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-KE', options);
+}
+
+// Populate payment summary
+function populatePaymentSummary() {
+    const form = document.getElementById('applicationForm');
+    const formData = new FormData(form);
+    let summaryHTML = '';
+    
+    if (formData.get('service_eta')) {
+        summaryHTML += `<div class="payment-line-item"><span class="payment-label">eTA Visa Application</span><span class="payment-value">KES ${pricing.eta.toFixed(2)}</span></div>`;
+    }
+    if (formData.get('service_tour')) {
+        summaryHTML += `<div class="payment-line-item"><span class="payment-label">Stopover Tours</span><span class="payment-value">KES ${pricing.stopover_tour.toFixed(2)}</span></div>`;
+    }
+    if (formData.get('service_meetgreet')) {
+        summaryHTML += `<div class="payment-line-item"><span class="payment-label">Airport Meet & Greet</span><span class="payment-value">KES ${pricing.meet_greet.toFixed(2)}</span></div>`;
+    }
+    
+    const additionalTravelers = document.querySelectorAll('.traveler-card:not([id$="_selection"])').length;
+    if (additionalTravelers > 0) {
+        const travelerPrice = formData.get('service_eta') ? pricing.eta : (formData.get('service_meetgreet') ? pricing.meet_greet : pricing.stopover_tour);
+        summaryHTML += `<div class="payment-line-item"><span class="payment-label">Additional Travelers (${additionalTravelers} × KES ${travelerPrice.toFixed(2)})</span><span class="payment-value">KES ${(additionalTravelers * travelerPrice).toFixed(2)}</span></div>`;
+    }
+    
+    document.getElementById('paymentSummary').innerHTML = summaryHTML;
+    const total = calculateTotal();
+    document.getElementById('totalAmount').textContent = `KES ${total.toFixed(2)}`;
+}
+
+// Calculate total
+function calculateTotal() {
+    const form = document.getElementById('applicationForm');
+    const formData = new FormData(form);
+    let total = 0;
+    
+    if (formData.get('service_eta')) total += pricing.eta;
+    if (formData.get('service_tour')) total += pricing.stopover_tour;
+    if (formData.get('service_meetgreet')) total += pricing.meet_greet;
+    
+    const additionalTravelers = document.querySelectorAll('.traveler-card:not([id$="_selection"])').length;
+    if (additionalTravelers > 0) {
+        const travelerPrice = formData.get('service_eta') ? pricing.eta : (formData.get('service_meetgreet') ? pricing.meet_greet : pricing.stopover_tour);
+        total += (additionalTravelers * travelerPrice);
+    }
+    
+    return total;
+}
+
+// Initiate payment using shared handler
 async function initiatePayment() {
     const form = document.getElementById('applicationForm');
     const formData = new FormData(form);
 
-    // Calculate total in USD first
-    let totalUSD = 0;
-
-    // Add service prices
-    if (formData.get('service_eta')) totalUSD += 50;      // $50
-    if (formData.get('service_tour')) totalUSD += 70;     // $70
-    if (formData.get('service_meetgreet')) totalUSD += 100; // $100
-
-    // Add additional travelers — priced dynamically to match primary user's service
-    const additionalTravelers = document.querySelectorAll('.traveler-card:not([id$="_selection"])').length;
-    if (additionalTravelers > 0) {
-        let travelerUSD = 50; // default
-        if (formData.get('service_eta')) travelerUSD = 50;
-        else if (formData.get('service_meetgreet')) travelerUSD = 100;
-        else if (formData.get('service_tour')) travelerUSD = 70;
-        totalUSD += (additionalTravelers * travelerUSD);
-    }
-
-    // Convert USD to KES (using exchange rate)
-    const exchangeRate = 130; // 1 USD = 130 KES
-    const totalKES = totalUSD * exchangeRate;
-
-    // Validate terms agreement
     if (!document.getElementById('termsAgree').checked) {
-        showFieldError('termsAgree', 'You must agree to the terms and conditions before proceeding');
+        PaymentHandler.showFieldError('termsAgree', 'You must agree to the terms and conditions before proceeding');
         return;
     }
 
-    // Disable pay button
     const payButton = document.getElementById('payButton');
     payButton.disabled = true;
     payButton.textContent = 'Processing...';
 
     try {
-        // Get form data
+        let totalUSD = 0;
+        if (formData.get('service_eta')) totalUSD += 50;
+        if (formData.get('service_tour')) totalUSD += 70;
+        if (formData.get('service_meetgreet')) totalUSD += 100;
+
+        const additionalTravelers = document.querySelectorAll('.traveler-card:not([id$="_selection"])').length;
+        if (additionalTravelers > 0) {
+            let travelerUSD = formData.get('service_eta') ? 50 : (formData.get('service_meetgreet') ? 100 : 70);
+            totalUSD += (additionalTravelers * travelerUSD);
+        }
+
+        const exchangeRate = 130;
+        const totalKES = totalUSD * exchangeRate;
+
+        const submissionResult = await submitApplicationToServer(formData);
+        const reference = submissionResult.referenceNumber;
+
         const email = formData.get('email');
         const firstName = formData.get('firstName');
         const lastName = formData.get('lastName');
-        const reference = 'ETA-' + Date.now(); // Generate unique reference
 
-        // Initialize Paystack with KES amount
-        const handler = PaystackPop.setup({
-            key: paystackPublicKey,
+        await paymentHandler.initiatePayment({
             email: email,
-            amount: Math.round(totalKES * 100), // Convert to cents (KES)
+            firstName: firstName,
+            lastName: lastName,
+            totalUSD: totalUSD,
+            amountKES: totalKES,
+            reference: reference,
             currency: 'KES',
-            ref: reference,
             metadata: {
-                custom_fields: [
-                    {
-                        display_name: "Applicant Name",
-                        variable_name: "applicant_name",
-                        value: `${firstName} ${lastName}`
-                    },
-                    {
-                        display_name: "Amount USD",
-                        variable_name: "amount_usd",
-                        value: `$${totalUSD.toFixed(2)}`
-                    },
-                    {
-                        display_name: "Amount KES",
-                        variable_name: "amount_kes",
-                        value: `KES ${totalKES.toFixed(2)}`
-                    }
-                ]
-            },
-            callback: function(response) {
-                // Payment successful
-                alert(`Payment successful!\nReference: ${response.reference}\nAmount: KES ${totalKES.toFixed(2)}`);
-                // Save transaction to database
-                saveTransaction(response, totalUSD, totalKES);
-            },
-            onClose: function() {
-                alert('Payment window closed.');
-                payButton.disabled = false;
-                payButton.textContent = 'Pay Now';
+                services: getSelectedServices(formData),
+                travelers: additionalTravelers
             }
+        },
+        // Success callback
+        (response) => {
+            window.location.href = '/payment/status?ref=' + encodeURIComponent(response.reference || reference);
+        },
+        // Close callback
+        () => {
+            alert('Payment window closed. You can complete payment later using reference: ' + reference);
+            payButton.disabled = false;
+            payButton.textContent = 'Pay Now';
         });
-
-        handler.openIframe();
 
     } catch (error) {
         console.error('Payment error:', error);
-        alert('Error: ' + error.message);
+        alert('Error: ' + (error.message || 'Unable to complete payment.'));
         payButton.disabled = false;
         payButton.textContent = 'Pay Now';
     }
 }
 
-// Save transaction to your backend
-async function saveTransaction(paystackResponse, amountUSD, amountKES) {
-    try {
-        const formData = new FormData(document.getElementById('applicationForm'));
-        const data = {
-            reference: paystackResponse.reference,
-            transactionId: paystackResponse.trans,
-            amountUSD: amountUSD,
-            amountKES: amountKES,
-            email: formData.get('email'),
-            firstName: formData.get('firstName'),
-            lastName: formData.get('lastName'),
-            services: Array.from(formData.getAll('service_eta,service_tour,service_meetgreet'))
-        };
+function getSelectedServices(formData) {
+    const services = [];
+    if (formData.get('service_eta')) services.push('eTA');
+    if (formData.get('service_tour')) services.push('Stopover Tour');
+    if (formData.get('service_meetgreet')) services.push('Meet & Greet');
+    return services.join(', ');
+}
 
-        const fetchResponse = await fetch('/save-transaction', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDatePickers();
+});
+
+// Handle radio/checkbox styling
+document.querySelectorAll('.radio-option input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll(`.radio-option input[name="${this.name}"]`).forEach(r => {
+            r.closest('.radio-option').classList.remove('selected');
         });
-
-        const result = await fetchResponse.json();
-        
-        if (result.success) {
-            // Redirect to success page with fallback to home
-            const successUrl = '/payment-success?ref=' + paystackResponse.reference;
-            safeRedirect(successUrl, '/');
-        } else {
-            // If transaction save failed, redirect to home
-            safeRedirect('/', '/');
+        if (this.checked) {
+            this.closest('.radio-option').classList.add('selected');
         }
-    } catch (error) {
-        console.error('Save error:', error);
-        // On error, redirect to home
-        safeRedirect('/', '/');
+    });
+});
+
+document.querySelectorAll('.checkbox-option input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        this.closest('.checkbox-option').classList.toggle('selected', this.checked);
+    });
+});
+
+// Traveler functions
+function addTraveler() {
+    travelerCount++;
+    const travelerId = `traveler_${travelerCount}`;
+    
+    const selectionHTML = `
+    <div class="traveler-card" id="${travelerId}_selection">
+        <div class="traveler-header">
+            <h3><span class="traveler-number">${travelerCount}</span> Traveler ${travelerCount} – Select Type</h3>
+            <button type="button" class="remove-traveler" onclick="removeTraveler('${travelerId}_selection')">Cancel</button>
+        </div>
+        <div style="padding: 10px 0;">
+            <p style="color: var(--text-light); margin-bottom: 20px;">What type of traveler is this?</p>
+            <div class="radio-group" style="flex-direction: row; gap: 15px;">
+                <label class="radio-option" style="flex: 1; padding: 20px;">
+                    <input type="radio" name="${travelerId}_typeSelect" value="adult" onchange="selectTravelerType('${travelerId}', 'adult')" style="margin-right: 10px; accent-color: var(--primary);">
+                    <span style="font-weight: 600;">👤 Adult (18+)</span>
+                </label>
+                <label class="radio-option" style="flex: 1; padding: 20px;">
+                    <input type="radio" name="${travelerId}_typeSelect" value="dependent" onchange="selectTravelerType('${travelerId}', 'dependent')" style="margin-right: 10px; accent-color: var(--primary);">
+                    <span style="font-weight: 600;">👶 Dependent</span>
+                </label>
+            </div>
+        </div>
+    </div>`;
+    
+    document.getElementById('travelersContainer').insertAdjacentHTML('beforeend', selectionHTML);
+}
+
+const _selectingTraveler = {};
+function selectTravelerType(travelerId, type) {
+    if (_selectingTraveler[travelerId]) return;
+    _selectingTraveler[travelerId] = true;
+    
+    const selectionCard = document.getElementById(`${travelerId}_selection`);
+    if (!selectionCard) return;
+    
+    if (type === 'adult') {
+        const adultHTML = `
+        <div class="traveler-card" id="${travelerId}">
+            <div class="traveler-header">
+                <h3><span class="traveler-number">${travelerCount}</span> Traveler ${travelerCount} – 👤 Adult</h3>
+                <button type="button" class="remove-traveler" onclick="removeTraveler('${travelerId}')">Remove</button>
+            </div>
+            <input type="hidden" name="${travelerId}_type" value="adult">
+            <div class="form-grid">
+                <div class="form-group"><label>First Name <span class="required">*</span></label><input type="text" id="${travelerId}_firstName" name="${travelerId}_firstName" required></div>
+                <div class="form-group"><label>Last Name <span class="required">*</span></label><input type="text" id="${travelerId}_lastName" name="${travelerId}_lastName" required></div>
+                <div class="form-group"><label>Date of Birth <span class="required">*</span></label><input type="text" id="${travelerId}_dateOfBirth" name="${travelerId}_dateOfBirth" required></div>
+                <div class="form-group"><label>Nationality <span class="required">*</span></label><select id="${travelerId}_nationality" name="${travelerId}_nationality" required>${document.getElementById('nationality').innerHTML}</select></div>
+                <div class="form-group"><label>Email <span class="required">*</span></label><input type="email" id="${travelerId}_email" name="${travelerId}_email" required></div>
+                <div class="form-group"><label>Phone <span class="required">*</span></label><input type="tel" id="${travelerId}_phone" name="${travelerId}_phone" required></div>
+                <div class="form-group full-width"><label>Passport Number <span class="required">*</span></label><input type="text" id="${travelerId}_passportNumber" name="${travelerId}_passportNumber" required></div>
+                <div class="form-group"><label>Passport Issue Date <span class="required">*</span></label><input type="text" id="${travelerId}_passportIssueDate" name="${travelerId}_passportIssueDate" required></div>
+                <div class="form-group"><label>Passport Expiry Date <span class="required">*</span></label><input type="text" id="${travelerId}_passportExpiryDate" name="${travelerId}_passportExpiryDate" required></div>
+            </div>
+        </div>`;
+        
+        selectionCard.insertAdjacentHTML('afterend', adultHTML);
+        selectionCard.style.animation = 'fadeOut 0.2s ease-out';
+        setTimeout(() => selectionCard.remove(), 200);
+        travelers.push(travelerId);
+        
+        const today = new Date();
+        datePickers[`${travelerId}_dateOfBirth`] = flatpickr(`#${travelerId}_dateOfBirth`, {
+            dateFormat: "m/d/Y",
+            maxDate: new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+        });
+        datePickers[`${travelerId}_passportIssueDate`] = flatpickr(`#${travelerId}_passportIssueDate`, {
+            dateFormat: "m/d/Y",
+            maxDate: "today"
+        });
+        datePickers[`${travelerId}_passportExpiryDate`] = flatpickr(`#${travelerId}_passportExpiryDate`, {
+            dateFormat: "m/d/Y",
+            minDate: new Date(today.getFullYear(), today.getMonth() + 6, today.getDate())
+        });
+    } else {
+        const dependentHTML = `
+        <div class="traveler-card" id="${travelerId}">
+            <div class="traveler-header">
+                <h3><span class="traveler-number">${travelerCount}</span> Traveler ${travelerCount} – 👶 Dependent</h3>
+                <button type="button" class="remove-traveler" onclick="removeTraveler('${travelerId}')">Remove</button>
+            </div>
+            <input type="hidden" name="${travelerId}_type" value="dependent">
+            <div class="form-grid">
+                <div class="form-group"><label>Full Name <span class="required">*</span></label><input type="text" id="${travelerId}_fullName" name="${travelerId}_fullName" required></div>
+                <div class="form-group"><label>Relationship <span class="required">*</span></label><select id="${travelerId}_relationship" name="${travelerId}_relationship" required><option value="">Select</option><option value="child">Child</option><option value="spouse">Spouse</option><option value="sibling">Sibling</option><option value="parent">Parent</option><option value="other">Other</option></select></div>
+                <div class="form-group"><label>Date of Birth <span class="required">*</span></label><input type="text" id="${travelerId}_dateOfBirth" name="${travelerId}_dateOfBirth" required></div>
+                <div class="form-group"><label>Passport Number <span class="required">*</span></label><input type="text" id="${travelerId}_passportNumber" name="${travelerId}_passportNumber" required></div>
+                <div class="form-group full-width"><label class="checkbox-option"><input type="checkbox" id="${travelerId}_guardianAgree" name="${travelerId}_guardianAgree" required><span>I confirm I am the legal guardian/parent</span></label></div>
+            </div>
+        </div>`;
+        
+        selectionCard.insertAdjacentHTML('afterend', dependentHTML);
+        selectionCard.style.animation = 'fadeOut 0.2s ease-out';
+        setTimeout(() => selectionCard.remove(), 200);
+        travelers.push(travelerId);
+        
+        datePickers[`${travelerId}_dateOfBirth`] = flatpickr(`#${travelerId}_dateOfBirth`, {
+            dateFormat: "m/d/Y",
+            maxDate: "today"
+        });
     }
 }
 
-        // Submit application to server (Step 1) - UPDATED FOR CRAFT CMS
-        async function submitApplicationToServer(formData) {
-            // === 1. Get CSRF Token (Craft CMS compatible) ===
-            const csrfToken = 
-                document.querySelector('meta[name="csrf-token"]')?.content ||
-                document.querySelector('[name="CRAFT_CSRF_TOKEN"]')?.value ||
-                document.querySelector('input[name="CRAFT_CSRF_TOKEN"]')?.value ||
-                '';
+function removeTraveler(travelerId) {
+    const card = document.getElementById(travelerId);
+    if (!card) return;
+    
+    card.style.animation = 'fadeOut 0.3s ease-out';
+    setTimeout(() => {
+        const dobKey = `${travelerId}_dateOfBirth`;
+        const issueKey = `${travelerId}_passportIssueDate`;
+        const expiryKey = `${travelerId}_passportExpiryDate`;
+        
+        if (datePickers[dobKey]) { datePickers[dobKey].destroy(); delete datePickers[dobKey]; }
+        if (datePickers[issueKey]) { datePickers[issueKey].destroy(); delete datePickers[issueKey]; }
+        if (datePickers[expiryKey]) { datePickers[expiryKey].destroy(); delete datePickers[expiryKey]; }
+        
+        card.remove();
+        travelers = travelers.filter(id => id !== travelerId);
+        renumberTravelers();
+    }, 300);
+}
 
-            // === 2. Collect travelers data ===
-            // Skip selection panels, only collect actual traveler cards
-            const travelerCards = document.querySelectorAll('.traveler-card:not([id$="_selection"])');
-            const travelers = [];
+function renumberTravelers() {
+    const travelerCards = document.querySelectorAll('.traveler-card');
+    travelerCards.forEach((card, index) => {
+        const number = index + 1;
+        card.querySelector('.traveler-number').textContent = number;
+        card.querySelector('.traveler-header h3').innerHTML = `<span class="traveler-number">${number}</span> Traveler ${number}`;
+    });
+}
 
-            travelerCards.forEach((card) => {
-                const cardId = card.id;
-                const typeInput = card.querySelector(`input[name="${cardId}_type"]`);
-                const type = typeInput ? typeInput.value : 'adult';
-
-                if (type === 'adult') {
-                    // ADULT — collects firstName, lastName, DOB, nationality, email, phone, passport details
-                    const travelerData = {
-                        type: 'adult',
-                        firstName: card.querySelector(`[name="${cardId}_firstName"]`)?.value || '',
-                        lastName: card.querySelector(`[name="${cardId}_lastName"]`)?.value || '',
-                        dateOfBirth: card.querySelector(`[name="${cardId}_dateOfBirth"]`)?.value || '',
-                        nationality: card.querySelector(`[name="${cardId}_nationality"]`)?.value || '',
-                        email: card.querySelector(`[name="${cardId}_email"]`)?.value || '',
-                        phone: card.querySelector(`[name="${cardId}_phone"]`)?.value || '',
-                        passportNumber: card.querySelector(`[name="${cardId}_passportNumber"]`)?.value || '',
-                        passportIssueDate: card.querySelector(`[name="${cardId}_passportIssueDate"]`)?.value || '',
-                        passportExpiryDate: card.querySelector(`[name="${cardId}_passportExpiryDate"]`)?.value || ''
-                    };
-                    travelers.push(travelerData);
-                } else {
-                    // DEPENDENT — collects fullName, relationship, DOB, passport, guardianAgreed
-                    const travelerData = {
-                        type: 'dependent',
-                        fullName: card.querySelector(`[name="${cardId}_fullName"]`)?.value || '',
-                        relationship: card.querySelector(`[name="${cardId}_relationship"]`)?.value || '',
-                        dateOfBirth: card.querySelector(`[name="${cardId}_dateOfBirth"]`)?.value || '',
-                        passportNumber: card.querySelector(`[name="${cardId}_passportNumber"]`)?.value || '',
-                        guardianAgreed: card.querySelector(`[name="${cardId}_guardianAgree"]`)?.checked || false
-                    };
-                    travelers.push(travelerData);
-                }
+// Submit application to server
+async function submitApplicationToServer(formData) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                     document.querySelector('[name="CRAFT_CSRF_TOKEN"]')?.value ||
+                     document.querySelector('input[name="CRAFT_CSRF_TOKEN"]')?.value || '';
+    
+    const travelerCards = document.querySelectorAll('.traveler-card:not([id$="_selection"])');
+    const travelers = [];
+    
+    travelerCards.forEach((card) => {
+        const cardId = card.id;
+        const typeInput = card.querySelector(`input[name="${cardId}_type"]`);
+        const type = typeInput ? typeInput.value : 'adult';
+        
+        if (type === 'adult') {
+            travelers.push({
+                type: 'adult',
+                firstName: card.querySelector(`[name="${cardId}_firstName"]`)?.value || '',
+                lastName: card.querySelector(`[name="${cardId}_lastName"]`)?.value || '',
+                dateOfBirth: card.querySelector(`[name="${cardId}_dateOfBirth"]`)?.value || '',
+                nationality: card.querySelector(`[name="${cardId}_nationality"]`)?.value || '',
+                email: card.querySelector(`[name="${cardId}_email"]`)?.value || '',
+                phone: card.querySelector(`[name="${cardId}_phone"]`)?.value || '',
+                passportNumber: card.querySelector(`[name="${cardId}_passportNumber"]`)?.value || '',
+                passportIssueDate: card.querySelector(`[name="${cardId}_passportIssueDate"]`)?.value || '',
+                passportExpiryDate: card.querySelector(`[name="${cardId}_passportExpiryDate"]`)?.value || ''
             });
-
-            // === 3. Get selected services ===
-            const services = [];
-            if (formData.get('service_eta')) services.push('eta');
-            if (formData.get('service_tour')) services.push('one_day_eta');
-            if (formData.get('service_meetgreet')) services.push('premium_eta');
-
-            // === 4. Build request data object ===
-            const requestData = {
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                email: formData.get('email'),
-                phone: formData.get('phone'),
-                dateOfBirth: formData.get('dateOfBirth'),
-                nationality: formData.get('nationality'),
-                passportNumber: formData.get('passportNumber'),
-                passportIssueDate: formData.get('passportIssueDate'),
-                passportExpiryDate: formData.get('passportExpiryDate'),
-                arrivalDate: formData.get('arrivalDate'),
-                departureDate: formData.get('departureDate'),
-                flightNumber: formData.get('flightNumber'),
-                airline: formData.get('airline'),
-                purpose: formData.get('purpose'),
-                accommodation: formData.get('accommodation'),
-                specialRequests: formData.get('specialRequests'),
-                services: services,
-                travelers: travelers
-            };
-
-            // === 5. Create FormData for file uploads ===
-            const uploadFormData = new FormData();
-            
-            // Add text/JSON fields
-            for (const [key, value] of Object.entries(requestData)) {
-                if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
-                    uploadFormData.append(key, JSON.stringify(value));
-                } else if (value !== null && value !== undefined) {
-                    uploadFormData.append(key, value);
-                }
-            }
-            
-            // Add file uploads with validation
-            const fileFields = [
-                { id: 'passportUpload', name: 'passportUpload', required: true },
-                { id: 'photoUpload', name: 'photoUpload', required: true },
-                { id: 'itineraryUpload', name: 'itineraryUpload', required: true },
-                { id: 'accommodationUpload', name: 'accommodationUpload', required: true }
-            ];
-            
-            for (const field of fileFields) {
-                const fileInput = document.getElementById(field.id);
-                if (fileInput?.files?.[0]) {
-                    uploadFormData.append(field.name, fileInput.files[0]);
-                } else if (field.required) {
-                    throw new Error(`Missing required file: ${field.name}`);
-                }
-            }
-
-            // === 6. Make AJAX request to Craft CMS endpoint ===
-            const response = await fetch('/actions/application-form/application/submit', {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    // Only add CSRF header if token exists (Craft handles anonymous routes too)
-                    ...(csrfToken && { 'X-CSRF-Token': csrfToken })
-                },
-                body: uploadFormData,
-                // IMPORTANT: Don't set Content-Type header - let browser set it with boundary for FormData
+        } else {
+            travelers.push({
+                type: 'dependent',
+                fullName: card.querySelector(`[name="${cardId}_fullName"]`)?.value || '',
+                relationship: card.querySelector(`[name="${cardId}_relationship"]`)?.value || '',
+                dateOfBirth: card.querySelector(`[name="${cardId}_dateOfBirth"]`)?.value || '',
+                passportNumber: card.querySelector(`[name="${cardId}_passportNumber"]`)?.value || '',
+                guardianAgreed: card.querySelector(`[name="${cardId}_guardianAgree"]`)?.checked || false
             });
-
-            // === 7. Handle response ===
-            // Check for HTTP errors first
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.errors?.server || `HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            
-            // Handle application-level errors from PHP
-            if (!result.success) {
-                // Display field-specific errors if available
-                if (result.errors && typeof result.errors === 'object') {
-                    for (const [field, message] of Object.entries(result.errors)) {
-                        showFieldError(field, message);
-                    }
-                }
-                throw new Error(result.errors?.server || Object.values(result.errors || {})[0] || 'Application submission failed');
-            }
-
-            // === 8. Return successful result ===
-            return {
-                success: true,
-                applicationId: result.applicationId,
-                referenceNumber: result.referenceNumber,
-                totalAmount: result.totalAmount,
-                message: result.message
-            };
         }
-
-        // Verify payment with server (Step 3) - UPDATED
-        // Note: Paystack callback confirms browser payment, but the webhook URL above
-        // is the reliable server-to-server endpoint that should be registered in Paystack.
-        async function verifyPaymentWithServer(reference, transactionId) {
-            const csrfToken = 
-                document.querySelector('meta[name="csrf-token"]')?.content ||
-                document.querySelector('[name="CRAFT_CSRF_TOKEN"]')?.value ||
-                document.querySelector('input[name="CRAFT_CSRF_TOKEN"]')?.value ||
-                '';
-
-            try {
-                const response = await fetch('/actions/application-form/application/verify-payment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        ...(csrfToken && { 'X-CSRF-Token': csrfToken })
-                    },
-                    body: JSON.stringify({
-                        reference: reference,
-                        transactionId: transactionId,
-                        applicationId: currentApplicationId
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.errors?.server || `HTTP ${response.status}`);
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Payment verified - show success screen
-                    document.getElementById('refNumber').textContent = reference;
-                    document.getElementById('confirmEmail').textContent = document.getElementById('email').value;
-
-                    // Transition to success step
-                    document.querySelector(`.form-step[data-step="6"]`)?.classList.remove('active');
-                    currentStep = 7;
-                    document.querySelector(`.form-step[data-step="7"]`)?.classList.add('active');
-                    updateProgress();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                    return true;
-                } else {
-                    const errorMsg = result.errors?.payment || 'Payment verification failed';
-                    alert(`${errorMsg}\n\nReference: ${reference}\nPlease contact support if this persists.`);
-                    return false;
-                }
-            } catch (error) {
-                console.error('Payment verification error:', error);
-                alert(`Payment completed but verification failed.\nReference: ${reference}\nError: ${error.message}\n\nPlease contact support with your reference number.`);
-                return false;
+    });
+    
+    const services = [];
+    if (formData.get('service_eta')) services.push('eta');
+    if (formData.get('service_tour')) services.push('one_day_eta');
+    if (formData.get('service_meetgreet')) services.push('premium_eta');
+    
+    const requestData = {
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        dateOfBirth: formData.get('dateOfBirth'),
+        nationality: formData.get('nationality'),
+        passportNumber: formData.get('passportNumber'),
+        passportIssueDate: formData.get('passportIssueDate'),
+        passportExpiryDate: formData.get('passportExpiryDate'),
+        arrivalDate: formData.get('arrivalDate'),
+        departureDate: formData.get('departureDate'),
+        flightNumber: formData.get('flightNumber'),
+        airline: formData.get('airline'),
+        purpose: formData.get('purpose'),
+        accommodation: formData.get('accommodation'),
+        specialRequests: formData.get('specialRequests'),
+        services: services,
+        travelers: travelers
+    };
+    
+    const uploadFormData = new FormData();
+    for (const [key, value] of Object.entries(requestData)) {
+        if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+            uploadFormData.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined) {
+            uploadFormData.append(key, value);
+        }
+    }
+    
+    const fileFields = [
+        { id: 'passportUpload', name: 'passportUpload', required: true },
+        { id: 'photoUpload', name: 'photoUpload', required: true },
+        { id: 'itineraryUpload', name: 'itineraryUpload', required: true },
+        { id: 'accommodationUpload', name: 'accommodationUpload', required: true }
+    ];
+    
+    for (const field of fileFields) {
+        const fileInput = document.getElementById(field.id);
+        if (fileInput?.files?.[0]) {
+            uploadFormData.append(field.name, fileInput.files[0]);
+        } else if (field.required) {
+            throw new Error(`Missing required file: ${field.name}`);
+        }
+    }
+    
+    const response = await fetch('/actions/application-form/application/submit', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+        },
+        body: uploadFormData
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.errors?.server || `HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+        if (result.errors && typeof result.errors === 'object') {
+            for (const [field, message] of Object.entries(result.errors)) {
+                showFieldError(field, message);
             }
         }
+        throw new Error(result.errors?.server || Object.values(result.errors || {})[0] || 'Application submission failed');
+    }
+    
+    return {
+        success: true,
+        applicationId: result.applicationId,
+        referenceNumber: result.referenceNumber,
+        totalAmount: result.totalAmount,
+        message: result.message
+    };
+}
 
-        // Safe redirect function with fallback to home
-        function safeRedirect(url, fallbackUrl = '/') {
-            try {
-                fetch(url, { method: 'HEAD', cache: 'no-store' })
-                    .then(response => {
-                        if (response.ok) {
-                            window.location.href = url;
-                        } else {
-                            window.location.href = fallbackUrl;
-                        }
-                    })
-                    .catch(() => {
-                        // If fetch fails (e.g., network error), still try to redirect
-                        window.location.href = url;
-                    });
-            } catch (error) {
-                console.error('Redirect error:', error);
-                window.location.href = fallbackUrl;
-            }
-        }
-
-        // Get selected services as string
-        function getSelectedServices(formData) {
-            const services = [];
-            if (formData.get('service_eta')) services.push('eTA');
-            if (formData.get('service_tour')) services.push('Stopover Tour');
-            if (formData.get('service_meetgreet')) services.push('Meet & Greet');
-            return services.join(', ');
-        }
-
-        // Handle radio button styling
-        document.querySelectorAll('.radio-option input[type="radio"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                document.querySelectorAll(`.radio-option input[name="${this.name}"]`).forEach(r => {
-                    r.closest('.radio-option').classList.remove('selected');
-                });
-                if (this.checked) {
-                    this.closest('.radio-option').classList.add('selected');
-                }
-            });
+// Verify payment with server
+async function verifyPaymentWithServer(reference, transactionId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                     document.querySelector('[name="CRAFT_CSRF_TOKEN"]')?.value ||
+                     document.querySelector('input[name="CRAFT_CSRF_TOKEN"]')?.value || '';
+    
+    try {
+        const response = await fetch('/actions/application-form/application/verify-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+            },
+            body: JSON.stringify({
+                reference: reference,
+                transactionId: transactionId,
+                applicationId: currentApplicationId
+            })
         });
-
-        // Handle checkbox styling
-        document.querySelectorAll('.checkbox-option input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                this.closest('.checkbox-option').classList.toggle('selected', this.checked);
-            });
-        });
-
-        // Validate date fields with detailed error messages
-        function validateDateField(input) {
-            const value = input.value;
-            if (!value) return null;
-            
-            const selectedDate = new Date(value);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const fieldId = input.id;
-            
-            if (fieldId === 'dateOfBirth' || fieldId.includes('_dateOfBirth')) {
-                const eighteenYearsAgo = new Date();
-                eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
-                eighteenYearsAgo.setHours(0, 0, 0, 0);
-                
-                if (selectedDate > eighteenYearsAgo) {
-                    return 'You must be at least 18 years old to apply. Applicants under 18 require a guardian.';
-                }
-                
-                const hundredYearsAgo = new Date();
-                hundredYearsAgo.setFullYear(today.getFullYear() - 100);
-                if (selectedDate < hundredYearsAgo) {
-                    return 'Please enter a valid date of birth';
-                }
-            }
-            
-            if (fieldId === 'passportIssueDate' || fieldId.includes('_passportIssueDate')) {
-                if (selectedDate > today) {
-                    return 'Passport issue date cannot be in the future';
-                }
-            }
-            
-            if (fieldId === 'passportExpiryDate' || fieldId.includes('_passportExpiryDate')) {
-                const sixMonthsFromNow = new Date();
-                sixMonthsFromNow.setMonth(today.getMonth() + 6);
-                sixMonthsFromNow.setHours(0, 0, 0, 0);
-                
-                if (selectedDate < sixMonthsFromNow) {
-                    return 'Passport must be valid for at least 6 months from your travel date. Please renew your passport before applying.';
-                }
-            }
-            
-            if (fieldId === 'arrivalDate') {
-                if (selectedDate < today) {
-                    return 'Arrival date cannot be in the past. Please select a future travel date.';
-                }
-            }
-            
-            if (fieldId === 'departureDate') {
-                if (selectedDate < today) {
-                    return 'Departure date cannot be in the past';
-                }
-            }
-            
-            return null;
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.errors?.server || `HTTP ${response.status}`);
         }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeDatePickers();
-        });
-
-        // Initiate payment — submits to server FIRST, then opens Paystack
-        async function initiatePayment() {
-            const form = document.getElementById('applicationForm');
-            const formData = new FormData(form);
-
-            // Validate terms agreement
-            if (!document.getElementById('termsAgree').checked) {
-                showFieldError('termsAgree', 'You must agree to the terms and conditions before proceeding');
-                return;
-            }
-
-            // Disable pay button to prevent double submission
-            const payButton = document.getElementById('payButton');
-            payButton.disabled = true;
-            payButton.textContent = 'Processing...';
-
-            try {
-                // STEP 1: Submit application to server FIRST — saves as pending
-                const submitResponse = await submitApplicationToServer(formData);
-
-                if (!submitResponse.success) {
-                    throw new Error(submitResponse.errors ? Object.values(submitResponse.errors).join(', ') : 'Failed to submit application');
-                }
-
-                // Store application ID for payment verification
-                currentApplicationId = submitResponse.applicationId;
-                const serverTotal = submitResponse.totalAmount;
-                const reference = submitResponse.referenceNumber;
-
-                // STEP 2: Open Paystack with server-verified amount and reference
-                const email = formData.get('email');
-                const firstName = formData.get('firstName');
-                const lastName = formData.get('lastName');
-
-                // Convert USD to KES for Paystack (serverTotal is in USD)
-                const exchangeRate = 130;
-                const totalKES = serverTotal * exchangeRate;
-
-                const handler = PaystackPop.setup({
-                    key: paystackPublicKey,
-                    email: email,
-                    amount: Math.round(totalKES * 100), // Paystack expects amount in kobo (KES × 100)
-                    currency: 'KES',
-                    ref: reference,
-                    metadata: {
-                        custom_fields: [
-                            {
-                                display_name: "Applicant Name",
-                                variable_name: "applicant_name",
-                                value: `${firstName} ${lastName}`
-                            },
-                            {
-                                display_name: "Application ID",
-                                variable_name: "application_id",
-                                value: currentApplicationId.toString()
-                            },
-                            {
-                                display_name: "Service Type",
-                                variable_name: "service_type",
-                                value: getSelectedServices(formData)
-                            }
-                        ]
-                    },
-                    callback: function(response) {
-                        // Payment completed — verify with server (updates to settled/paid)
-                        verifyPaymentWithServer(response.reference, response.trans);
-                    },
-                    onClose: function() {
-                        // User closed Paystack without paying — application stays as pending
-                        alert('Payment window closed. Your application is saved as pending. You can complete payment later using reference: ' + reference);
-                        payButton.disabled = false;
-                        payButton.textContent = 'Pay Now';
-                    }
-                });
-
-                handler.openIframe();
-
-            } catch (error) {
-                console.error('Payment initiation error:', error);
-                alert('Error: ' + error.message);
-                payButton.disabled = false;
-                payButton.textContent = 'Pay Now';
-            }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('refNumber').textContent = reference;
+            document.getElementById('confirmEmail').textContent = document.getElementById('email').value;
+            
+            document.querySelector(`.form-step[data-step="6"]`)?.classList.remove('active');
+            currentStep = 7;
+            document.querySelector(`.form-step[data-step="7"]`)?.classList.add('active');
+            updateProgress();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return true;
+        } else {
+            const errorMsg = result.errors?.payment || 'Payment verification failed';
+            alert(`${errorMsg}\nReference: ${reference}\nPlease contact support if this persists.`);
+            return false;
         }
+    } catch (error) {
+        console.error('Payment verification error:', error);
+        alert(`Payment completed but verification failed.\nReference: ${reference}\nError: ${error.message}\nPlease contact support with your reference number.`);
+        return false;
+    }
+}
 
-        // Save transaction to your backend
-        async function saveTransaction(paystackResponse, amountUSD, amountKES) {
-            try {
-                const formData = new FormData(document.getElementById('applicationForm'));
-                const data = {
-                    reference: paystackResponse.reference,
-                    transactionId: paystackResponse.trans,
-                    amountUSD: amountUSD,
-                    amountKES: amountKES,
-                    email: formData.get('email'),
-                    firstName: formData.get('firstName'),
-                    lastName: formData.get('lastName'),
-                    services: Array.from(formData.getAll('service_eta')).concat(
-                        Array.from(formData.getAll('service_tour')),
-                        Array.from(formData.getAll('service_meetgreet'))
-                    )
-                };
-
-                const fetchResponse = await fetch('/save-transaction', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await fetchResponse.json();
-                
-                if (result.success) {
-                    // Redirect to success page with fallback to home
-                    const successUrl = '/payment-success?ref=' + paystackResponse.reference;
-                    safeRedirect(successUrl, '/');
+// Safe redirect
+function safeRedirect(url, fallbackUrl = '/') {
+    try {
+        fetch(url, { method: 'HEAD', cache: 'no-store' })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = url;
                 } else {
-                    // If transaction save failed, redirect to home
-                    safeRedirect('/', '/');
+                    window.location.href = fallbackUrl;
                 }
-            } catch (error) {
-                console.error('Save error:', error);
-                // On error, redirect to home
-                safeRedirect('/', '/');
-            }
-        }
+            })
+            .catch(() => {
+                window.location.href = url;
+            });
+    } catch (error) {
+        console.error('Redirect error:', error);
+        window.location.href = fallbackUrl;
+    }
+}
+</script>
+        {% endblock %}
 
-    </script>
-
-{% endblock %}

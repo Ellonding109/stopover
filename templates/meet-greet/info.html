@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meet & Greet Information - Kenya Stopover</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #0A3D62;
+            --secondary: #C79A5C;
+            --accent: #E8B872;
+            --text-dark: #1a1a1a;
+            --text-light: #666;
+            --bg-light: #FAFAF8;
+            --bg-white: #FFFFFF;
+            --border: #E5E5E0;
+            --success: #2D7D4F;
+            --error: #C7433D;
+            --top-bar-bg: #1a5f7a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-light);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== PROFESSIONAL HEADER ===== */
+        .top-bar {
+            background: var(--top-bar-bg);
+            color: white;
+            padding: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .top-bar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .top-bar-info {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .top-bar-info span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .top-bar-info i {
+            font-size: 1rem;
+        }
+
+        .top-bar-info a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .top-bar-info a:hover {
+            color: var(--secondary);
+        }
+
+        .top-bar-social {
+            display: flex;
+            gap: 15px;
+        }
+
+        .top-bar-social a {
+            color: white;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+        }
+
+        .top-bar-social a:hover {
+            color: var(--secondary);
+        }
+
+        .main-header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .main-header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .logo img {
+            height: 50px;
+            width: auto;
+        }
+
+        .main-nav ul {
+            display: flex;
+            list-style: none;
+            gap: 35px;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .main-nav a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .main-nav a:hover {
+            color: var(--primary);
+        }
+
+        .main-nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--secondary);
+            transition: width 0.3s ease;
+        }
+
+        .main-nav a:hover::after {
+            width: 100%;
+        }
+
+        .apply-btn {
+            background: #d97706;
+            color: white !important;
+            padding: 12px 30px !important;
+            border-radius: 5px;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .apply-btn:hover {
+            background: #b45309;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+        }
+
+        .apply-btn::after {
+            display: none !important;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .meet-greet-hero {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a5276 100%);
+            padding: 100px 0 80px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .meet-greet-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.05" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background-size: cover;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero-content h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .hero-content .lead {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            opacity: 0.95;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        /* ===== SECTIONS ===== */
+        .info-section {
+            padding: 80px 0;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto 50px;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(10, 61, 98, 0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(10, 61, 98, 0.15);
+            border-color: var(--secondary);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            background: var(--bg-light);
+        }
+
+        .steps-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-top: 50px;
+            position: relative;
+        }
+
+        .steps-container::before {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            z-index: 0;
+        }
+
+        .step-item {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 4px solid var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0 auto 25px;
+            box-shadow: 0 4px 15px rgba(10, 61, 98, 0.2);
+        }
+
+        .step-item h3 {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .step-item p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Pricing Cards */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: 0 4px 20px rgba(10, 61, 98, 0.08);
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--secondary);
+            transform: scale(1.05);
+        }
+
+        .pricing-card.featured::before {
+            content: 'Most Popular';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--secondary);
+            color: white;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(10, 61, 98, 0.15);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .pricing-header h3 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .pricing-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .pricing-amount span {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--text-light);
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px 0;
+        }
+
+        .pricing-features li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .pricing-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .pricing-btn:hover {
+            background: #082d48;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(10, 61, 98, 0.3);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a5276 100%);
+            padding: 100px 0;
+            color: white;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 16px 40px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+            border: 2px solid var(--secondary);
+        }
+
+        .btn-primary:hover {
+            background: #b88a4a;
+            border-color: #b88a4a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(199, 154, 92, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-outline:hover {
+            background: white;
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-nav { display: none; }
+            .mobile-menu-toggle { display: block; }
+        }
+
+        @media (max-width: 768px) {
+            .top-bar .container {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .top-bar-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .hero-content h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero-content .lead {
+                font-size: 1.1rem;
+            }
+            
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .steps-container {
+                flex-direction: column;
+            }
+            
+            .steps-container::before {
+                display: none;
+            }
+            
+            .pricing-card.featured {
+                transform: none;
+            }
+            
+            .pricing-card.featured:hover {
+                transform: translateY(-5px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-content h1 {
+                font-size: 1.8rem;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container">
+            <div class="top-bar-info">
+                <span><i class="fas fa-envelope"></i> <a href="mailto:info@kenyastopover.com">info@kenyastopover.com</a></span>
+                <span><i class="fas fa-phone"></i> <a href="tel:+254116818181">+254 116 81 81 81</a></span>
+                <span><i class="fas fa-map-marker-alt"></i> Kenya House Complex, 1st Floor, Utalii Street, Nairobi.</span>
+            </div>
+            <div class="top-bar-social">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-youtube"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="main-header">
+        <div class="container">
+            <div class="logo">
+                <a href="/">
+                    <img src="assets/images/logo.png" alt="Kenya Stopover Logo">
+                </a>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li class="dropdown">
+                        <a href="#">ETA Visa</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/kenya-guidelines">Kenya Guidelines</a></li>
+                            <li><a href="/eta-application">eVisa Application</a></li>
+                            <li><a href="/visa-consultation">Visa Consultation</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#">Meet & Greet</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/meet-greet">Arrival Meet & Greet</a></li>
+                            <li><a href="/meet-greet">Departure Meet & Greet</a></li>
+                            <li><a href="/meet-greet">Transit Meet & Greet</a></li>
+                            <li><a href="/meet-greet">Charter Meet & Greet</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="/guided-experiences">Guided Experiences</a></li>
+                    <li class="dropdown">
+                        <a href="#">The Company</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/about-us">About Us</a></li>
+                            <li><a href="/faqs">FAQs</a></li>
+                            <li><a href="/contact-us">Contact Us</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="/kenya-stopover-news-and-guides">News & Guides</a></li>
+                    <li><a href="/eta-application" class="apply-btn">Apply Now</a></li>
+                </ul>
+            </nav>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="meet-greet-hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Premium Meet & Greet Services</h1>
+                <p class="lead">Experience seamless airport assistance from the moment you land. Our professional team ensures a smooth, stress-free journey through immigration, baggage collection, and transfers.</p>
+                <div class="hero-cta">
+                    <a href="/meet-greet/booking" class="btn btn-primary">
+                        <i class="fas fa-calendar-check"></i> Book Now
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline">
+                        <i class="fas fa-info-circle"></i> How It Works
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="info-section">
+        <div class="container">
+            <h2 class="section-title">Why Choose Our Meet & Greet Service?</h2>
+            <p class="section-subtitle">We provide personalized, professional airport assistance to make your journey to Kenya exceptional from start to finish.</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h3>Personal Representative</h3>
+                    <p>Dedicated professional greets you at the airport with a personalized welcome board, ready to assist you every step of the way.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-passport"></i>
+                    </div>
+                    <h3>Fast-Track Immigration</h3>
+                    <p>Skip the long queues with our expedited immigration and customs clearance service. More time enjoying Kenya, less time waiting.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-suitcase-rolling"></i>
+                    </div>
+                    <h3>Baggage Assistance</h3>
+                    <p>Complete luggage handling support from collection to your vehicle. Travel light and stress-free with our expert assistance.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <h3>Seamless Transfers</h3>
+                    <p>Smooth coordination with your transportation, whether it's a private car, taxi, or hotel shuttle. We ensure perfect handover.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>24/7 Availability</h3>
+                    <p>Our services are available around the clock, every day of the year. No matter when you arrive, we're here for you.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>Expert Support</h3>
+                    <p>Our trained professionals know the airports inside out. Get insider tips and local knowledge to enhance your stay.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="info-section how-it-works" id="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Simple, straightforward, and designed for your convenience. Here's what to expect:</p>
+            
+            <div class="steps-container">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <h3>Book Online</h3>
+                    <p>Fill out our simple booking form with your flight details and preferences. Instant confirmation.</p>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <h3>We Meet You</h3>
+                    <p>Our representative greets you at arrivals with a welcome board displaying your name.</p>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <h3>Fast-Track Service</h3>
+                    <p>Skip the lines with priority immigration and customs clearance assistance.</p>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <h3>Smooth Transfer</h3>
+                    <p>Baggage collection and seamless handover to your transportation.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="info-section">
+        <div class="container">
+            <h2 class="section-title">Simple, Transparent Pricing</h2>
+            <p class="section-subtitle">Choose the service that fits your needs. No hidden fees, no surprises.</p>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Arrival Meet & Greet</h3>
+                        <div class="pricing-amount">$50<span>/person</span></div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Personal airport representative</li>
+                        <li>Welcome board with your name</li>
+                        <li>Fast-track immigration</li>
+                        <li>Baggage collection assistance</li>
+                        <li>Escort to transportation</li>
+                        <li>24/7 support</li>
+                    </ul>
+                    <a href="/meet-greet/booking?type=arrival" class="pricing-btn">Book Now</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <div class="pricing-header">
+                        <h3>Departure Meet & Greet</h3>
+                        <div class="pricing-amount">$40<span>/person</span></div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Meet at hotel/ residence</li>
+                        <li>Fast-track check-in</li>
+                        <li>Priority security clearance</li>
+                        <li>Lounge access assistance</li>
+                        <li>Escort to departure gate</li>
+                        <li>Flight monitoring</li>
+                    </ul>
+                    <a href="/meet-greet/booking?type=departure" class="pricing-btn">Book Now</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Add Transportation</h3>
+                        <div class="pricing-amount">$25<span>flat rate</span></div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Airport to hotel transfer</li>
+                        <li>Hotel to airport transfer</li>
+                        <li>Comfortable vehicles</li>
+                        <li>Professional drivers</li>
+                        <li>Flight tracking</li>
+                        <li>Meet & greet included</li>
+                    </ul>
+                    <a href="/meet-greet/booking" class="pricing-btn">Add to Booking</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready for a Stress-Free Airport Experience?</h2>
+            <p>Book your Meet & Greet service today and let us handle the details while you focus on your journey.</p>
+            <a href="/meet-greet/booking" class="btn btn-primary" style="font-size: 1.2rem; padding: 18px 50px;">
+                <i class="fas fa-calendar-check"></i> Book Your Service Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const nav = document.querySelector('.main-nav');
+            nav.style.display = nav.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const nav = document.querySelector('.main-nav');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            
+            if (nav.style.display === 'block' && 
+                !nav.contains(event.target) && 
+                !toggle.contains(event.target)) {
+                nav.style.display = 'none';
+            }
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -64,6 +64,10 @@ class ApplicationFormModule
                 'controller' => \modules\applicationform\controllers\MeetGreetController::class,
                 'action' => 'verifyPayment'
             ],
+            'GET /meet-greet/info' => [
+            'controller' => \modules\applicationform\controllers\MeetGreetController::class,
+            'action' => 'info'
+        ],
         ];
     }
 
